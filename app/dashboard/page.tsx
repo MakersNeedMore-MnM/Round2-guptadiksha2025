@@ -9,13 +9,18 @@ import MarketDetailDrawer from "@/components/dashboard/MarketDetailDrawer";
 import { MOCK_MANDIS, MandiMarket, getCropLabel } from "@/lib/mockMandiData";
 import { UserProfile } from "@/components/AuthModal";
 import { useLanguage } from "@/context/LanguageContext";
-import { Globe, User, LogOut } from "lucide-react";
+import { User } from "lucide-react";
 import LanguageSelector from "@/components/LanguageSelector";
 import { PRESET_ORIGINS } from "@/lib/geo";
 import type { Language } from "@/lib/types";
 import { fetchMandiDataAction } from "@/app/actions/mandi";
+import { EXPORT_MANDIS, isFruitCrop } from "@/lib/exportMandiData";
+import MandiLeaderboard from "@/components/dashboard/MandiLeaderboard";
 
-// Dynamically import Leaflet InteractiveMap with SSR disabled to prevent window object errors
+const EXPORT_CROPS = new Set([
+  "Mango", "Grapes", "Pomegranate", "Banana", "Orange", "Chikoo", "Apple",
+]);
+
 const InteractiveMap = dynamic(() => import("@/components/dashboard/InteractiveMap"), {
   ssr: false,
   loading: () => (
@@ -29,35 +34,27 @@ export default function DashboardPage() {
   const { t, language } = useLanguage();
   const lang: Language = language ?? "en";
 
-  // Full recommendation result (top 3 + breakdown)
   const [recommendation, setRecommendation] = useState<RecommendationResult | null>(null);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
-  // 🆕 Mandi data from API (falls back to MOCK_MANDIS on failure)
   const [mandis, setMandis] = useState<MandiMarket[]>(MOCK_MANDIS);
-  const [dataSource, setDataSource] = useState<"api" | "fallback">("fallback");
+  const [dataSource, setDataSource] = useState<"api" | "fallback" | "curated">("fallback");
 
-  // Map state
   const [selectedCrop, setSelectedCrop] = useState("Tomatoes");
   const [selectedMandi, setSelectedMandi] = useState<MandiMarket | null>(null);
   const [recommendedMandiId, setRecommendedMandiId] = useState<string | undefined>("mumbai-vashi");
 
-  // Origin state — defaults to Pune, gets overridden from user profile
   const [originId, setOriginId] = useState<string>("pune");
   const origin =
     PRESET_ORIGINS.find((o) => o.id === originId) ?? PRESET_ORIGINS[0];
 
-  // Load user profile from localStorage AND match origin from user's location
   useEffect(() => {
     const saved = localStorage.getItem("farmoptima_user");
     if (!saved) return;
-
     try {
       const profile = JSON.parse(saved) as UserProfile;
       setUserProfile(profile);
-
-      // Match user's location to a preset origin
       const raw = (profile.location ?? "").toLowerCase();
       const matched = PRESET_ORIGINS.find((o) =>
         raw.includes(o.nameEn.toLowerCase())
@@ -68,20 +65,24 @@ export default function DashboardPage() {
     }
   }, []);
 
-  // 🆕 Fetch real mandi data whenever crop changes (with fallback)
   useEffect(() => {
     let cancelled = false;
+
+    if (isFruitCrop(selectedCrop)) {
+      setMandis(EXPORT_MANDIS);
+      setDataSource("curated");
+      return;
+    }
 
     fetchMandiDataAction(selectedCrop)
       .then((result) => {
         if (cancelled) return;
         setMandis(result.mandis);
         setDataSource(result.source);
-        console.log("Mandi source:", result.source, result.reason ?? "");
       })
       .catch((err) => {
         if (cancelled) return;
-        console.error("Mandi fetch failed, keeping fallback:", err);
+        console.error("Mandi fetch failed:", err);
         setMandis(MOCK_MANDIS);
         setDataSource("fallback");
       });
@@ -96,7 +97,6 @@ export default function DashboardPage() {
     window.location.href = "/";
   };
 
-  // Stable callback so InteractiveMap doesn't re-render on every dashboard render
   const handleSelectMandi = useCallback((mandi: MandiMarket) => {
     setSelectedMandi(mandi);
   }, []);
@@ -117,23 +117,25 @@ export default function DashboardPage() {
       const activeOrigin =
         PRESET_ORIGINS.find((o) => o.id === activeOriginId) ?? PRESET_ORIGINS[0];
 
-      // 🧠 Real recommendation engine — uses live `mandis` from API/fallback
+      const windowHours = EXPORT_CROPS.has(harvest.crop) ? 48 : 12;
+      const sourceMandis = isFruitCrop(harvest.crop) ? EXPORT_MANDIS : mandis;
+
       const result = recommendBestMandi(
         {
           origin: activeOrigin,
           crop: harvest.crop,
           quantityKg: harvest.quantity,
-          sellingWindowHours: 12,
+          sellingWindowHours: windowHours,
           ageDays: harvest.ageDays,
         },
-        mandis
+        sourceMandis
       );
 
       setRecommendation(result);
 
       if (result.best) {
         setRecommendedMandiId(result.best.mandiId);
-        const bestMandi = mandis.find((m) => m.id === result.best!.mandiId);
+        const bestMandi = sourceMandis.find((m) => m.id === result.best!.mandiId);
         if (bestMandi) setSelectedMandi(bestMandi);
       } else {
         setRecommendedMandiId(undefined);
@@ -143,7 +145,6 @@ export default function DashboardPage() {
     [originId, mandis]
   );
 
-  // Crop pills — labels pull from translations, IDs stay English for data lookup
   const crops = [
     { id: "Tomatoes", emoji: "🍅" },
     { id: "Onions", emoji: "🧅" },
@@ -151,12 +152,18 @@ export default function DashboardPage() {
     { id: "Soybeans", emoji: "🌱" },
     { id: "Wheat", emoji: "🌾" },
     { id: "Cotton", emoji: "☁️" },
+    { id: "Mango", emoji: "🥭" },
+    { id: "Grapes", emoji: "🍇" },
+    { id: "Pomegranate", emoji: "🍎" },
+    { id: "Banana", emoji: "🍌" },
+    { id: "Orange", emoji: "🍊" },
+    { id: "Chikoo", emoji: "🟤" },
+    { id: "Apple", emoji: "🍏" },
   ];
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#fbf9f5] font-sans">
 
-      {/* Left Sidebar Navigation */}
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -165,65 +172,81 @@ export default function DashboardPage() {
         userLocation={userProfile?.location}
       />
 
-      {/* Main Canvas / Map First View */}
       <main className="flex-1 flex flex-col h-full relative overflow-hidden">
 
-        {/* Top Header Bar */}
-        <header className="h-16 px-6 bg-[#fbf9f5] border-b border-[#e6e2d8] flex items-center justify-between z-20">
-          <div className="flex items-center space-x-4">
-            <span className="text-xs font-bold uppercase tracking-widest text-emerald-900">
+        <header className="h-16 px-6 bg-[#fbf9f5] border-b border-[#e6e2d8] flex items-center gap-6 z-20">
+
+          {/* LEFT: Title */}
+          <div className="shrink-0">
+            <span className="text-xs font-bold uppercase tracking-widest text-amber-900 whitespace-nowrap">
               {t.headerCanvasTitle ?? "Mandi Map Canvas"}
             </span>
+          </div>
 
-            {/* Data source indicator (subtle) */}
+          {/* CENTER: Crop pills */}
+          <div className="flex-1 min-w-0 flex items-center gap-2 overflow-x-auto no-scrollbar px-2">
+            {crops.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => setSelectedCrop(c.id)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap shrink-0 ${selectedCrop === c.id
+                  ? "bg-amber-400 text-stone-950 font-bold shadow-sm ring-1 ring-amber-500"
+                  : "bg-white text-stone-700 hover:bg-amber-50 border border-[#e6e2d8] hover:border-amber-300"
+                  }`}
+              >
+                {c.emoji} {getCropLabel(c.id, lang)}
+              </button>
+            ))}
+          </div>
+
+          {/* RIGHT: Live badge + Language + User */}
+          <div className="flex items-center gap-3 shrink-0">
+
+            {/* Live / India-wide / Offline badge */}
             <span
-              className={`hidden md:inline-block text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-full border ${dataSource === "api"
-                ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                : "bg-amber-50 text-amber-800 border-amber-200"
+              className={`hidden md:inline-flex items-center text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full border ${dataSource === "api"
+                ? "bg-amber-50 text-amber-800 border-amber-300"
+                : dataSource === "curated"
+                  ? "bg-purple-50 text-purple-800 border-purple-300"
+                  : "bg-stone-100 text-stone-700 border-stone-300"
                 }`}
               title={
                 dataSource === "api"
                   ? "Live data from data.gov.in"
-                  : "Using local fallback data"
+                  : dataSource === "curated"
+                    ? "Curated India-wide fruit mandis"
+                    : "Using local fallback data"
               }
             >
-              {dataSource === "api" ? "● Live" : "● Offline"}
+              <span
+                className={`inline-block w-1.5 h-1.5 rounded-full mr-1.5 ${dataSource === "api"
+                  ? "bg-amber-600"
+                  : dataSource === "curated"
+                    ? "bg-purple-600"
+                    : "bg-stone-500"
+                  }`}
+              />
+              {dataSource === "api"
+                ? "LIVE"
+                : dataSource === "curated"
+                  ? "INDIA-WIDE"
+                  : "OFFLINE"}
             </span>
 
-            {/* Crop Selector Pills */}
-            <div className="hidden sm:flex items-center space-x-1.5 overflow-x-auto">
-              {crops.map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => setSelectedCrop(c.id)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${selectedCrop === c.id
-                    ? "bg-[#0b2b1d] text-amber-300 font-bold shadow-2xs"
-                    : "bg-white text-stone-700 hover:bg-stone-100 border border-[#e6e2d8]"
-                    }`}
-                >
-                  {c.emoji} {getCropLabel(c.id, lang)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Right Header Actions & Language */}
-          <div className="flex items-center space-x-3">
             <LanguageSelector />
 
             {userProfile && (
-              <div className="px-3 py-1 bg-stone-100 rounded-full border border-stone-200 text-xs font-semibold text-stone-800 flex items-center space-x-1">
-                <User className="w-3.5 h-3.5 text-emerald-800" />
-                <span>{userProfile.name}</span>
+              <div className="px-3 py-1.5 bg-stone-100 rounded-full border border-stone-200 text-xs font-semibold text-stone-800 flex items-center gap-2 max-w-[140px]">
+                <User className="w-3.5 h-3.5 text-amber-800 shrink-0" />
+                <span className="truncate">{userProfile.name}</span>
               </div>
             )}
           </div>
+
         </header>
 
-        {/* Map Container View */}
         <div className="flex-1 relative p-4 bg-[#f7f4ee]">
 
-          {/* Interactive Map Component — uses `mandis` from API/fallback */}
           <InteractiveMap
             mandis={mandis}
             selectedCrop={selectedCrop}
@@ -233,7 +256,14 @@ export default function DashboardPage() {
             origin={origin}
           />
 
-          {/* Clicked Market Detail Drawer (Overlay Top-Right) */}
+          <MandiLeaderboard
+            recommendation={recommendation}
+            onSelectMandiId={(id) => {
+              const m = mandis.find((x) => x.id === id);
+              if (m) setSelectedMandi(m);
+            }}
+          />
+
           <MarketDetailDrawer
             mandi={selectedMandi}
             selectedCrop={selectedCrop}
@@ -242,7 +272,6 @@ export default function DashboardPage() {
             origin={origin}
           />
 
-          {/* Floating Harvest Action Panel ("What's your harvest?") (Bottom Overlay) */}
           <div className="absolute bottom-6 left-6 right-6 z-20 max-w-4xl mx-auto">
             <HarvestSearchForm
               selectedCrop={selectedCrop}

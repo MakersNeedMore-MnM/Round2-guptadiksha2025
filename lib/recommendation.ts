@@ -1,3 +1,36 @@
+// lib/recommendation.ts
+//
+// FarmOptima "Best Mandi" recommendation engine.
+//
+// Flow (per spec):
+//   ALL CANDIDATE MANDIS
+//           ↓
+//   Calculate road distance (from origin)
+//           ↓
+//   Calculate travel time
+//           ↓
+//   Check urgency  ──► NOT FEASIBLE  ──► REMOVE from ranking
+//           │
+//           └──► FEASIBLE
+//                    ↓
+//            Calculate gross revenue
+//                    ↓
+//            Calculate transport cost
+//                    ↓
+//            Calculate other selling costs
+//                    ↓
+//            Calculate net revenue
+//                    ↓
+//            Rank by net revenue
+//                    ↓
+//                 🥇 BEST MANDI
+//
+// IMPORTANT: A mandi with a higher ₹/kg price but impractical
+// travel time is EXCLUDED entirely — not penalized.
+//
+// The engine is modular: price source, distance source, and
+// config can all be swapped without changing the algorithm.
+
 import type { MandiMarket } from "./mockMandiData";
 import { distanceFromOrigin, type Origin } from "./geo";
 
@@ -36,7 +69,7 @@ export interface RecommendationInput {
     quantityKg: number;        // total harvest weight
     /** How many hours the farmer is willing/able to spend selling. */
     sellingWindowHours?: number;
-    /** Optional: age of the crop in days, if you later want to model spoilage. */
+    /** Optional: age of the crop in days (currently informational). */
     ageDays?: number;
 }
 
@@ -45,7 +78,7 @@ export interface MandiEvaluation {
     mandiName: string;
 
     // Raw inputs
-    pricePerKg: number;        // ₹/kg (net after commissions, as stored in mock data)
+    pricePerKg: number;        // ₹/kg (net after commissions)
     distanceKm: number;        // road distance from origin
 
     // Derived
@@ -96,7 +129,7 @@ export const defaultDistanceSource: DistanceSource = {
 };
 
 // ─────────────────────────────────────────────────────────────
-//  CORE EVALUATION (one mandi)
+//  STEP 1–4: Evaluate a single mandi
 // ─────────────────────────────────────────────────────────────
 
 export function evaluateMandi(
@@ -109,17 +142,22 @@ export function evaluateMandi(
     distanceSource: DistanceSource,
     config: RecommendationConfig
 ): MandiEvaluation {
+    // ── Inputs ──
     const pricePerKg = priceSource.getNetPricePerKg(mandi, crop);
     const distanceKm = distanceSource.getDistanceKm(origin, mandi);
 
-    // Handle missing price data
+    // ── Travel time (always computed, even for missing price, so UI can show it) ──
+    const travelTimeHours =
+        distanceKm / config.averageSpeedKmh + config.fixedOverheadHours;
+
+    // ── Handle missing price ──
     if (pricePerKg === null) {
         return {
             mandiId: mandi.id,
             mandiName: mandi.name,
             pricePerKg: 0,
             distanceKm,
-            travelTimeHours: 0,
+            travelTimeHours,
             transportCost: 0,
             grossRevenue: 0,
             otherSellingCost: 0,
@@ -129,14 +167,25 @@ export function evaluateMandi(
         };
     }
 
+    // ── Step 1: Gross revenue ──
+    // Gross Revenue = Quantity × Price
+    // e.g. 5000 kg × ₹35/kg = ₹1,75,000
     const grossRevenue = quantityKg * pricePerKg;
+
+    // ── Step 2: Transport cost ──
+    // Transport Cost = Distance × Cost per km
+    // e.g. 150 km × ₹20/km = ₹3,000
     const transportCost = distanceKm * config.transportCostPerKm;
+
+    // ── Step 3: Other selling costs (mandi fees, hamali) ──
     const otherSellingCost = grossRevenue * config.otherSellingCostRate;
+
+    // ── Step 4: Net revenue ──
+    // Net Revenue = Gross − Transport − Other
     const netRevenue = grossRevenue - transportCost - otherSellingCost;
 
-    const travelTimeHours =
-        distanceKm / config.averageSpeedKmh + config.fixedOverheadHours;
-
+    // ── Urgency constraint ──
+    // IF travel time > available window → NOT FEASIBLE
     const feasible = travelTimeHours <= sellingWindowHours;
 
     return {
@@ -155,7 +204,7 @@ export function evaluateMandi(
 }
 
 // ─────────────────────────────────────────────────────────────
-//  TOP-LEVEL RECOMMENDATION
+//  STEP 5: Rank and pick the best
 // ─────────────────────────────────────────────────────────────
 
 export function recommendBestMandi(
@@ -168,6 +217,7 @@ export function recommendBestMandi(
     const sellingWindowHours =
         input.sellingWindowHours ?? config.defaultSellingWindowHours;
 
+    // Evaluate every candidate mandi
     const allEvaluations = mandis.map((mandi) =>
         evaluateMandi(
             input.origin,
@@ -181,6 +231,7 @@ export function recommendBestMandi(
         )
     );
 
+    // Filter out infeasible (travel time > window) and rank by net revenue
     const feasibleSorted = allEvaluations
         .filter((e) => e.feasible)
         .sort((a, b) => b.netRevenue - a.netRevenue);

@@ -854,7 +854,38 @@ export const MOCK_MANDIS: MandiMarket[] = [
   },
 ];
 
-// ─── Localization Helpers ───
+// ─────────────────────────────────────────────────────────────
+//  AUTO-ENRICH: Export crops for fallback data
+//  Adds Mango / Grapes / Pomegranate / Banana / Orange to every
+//  mandi with slight per-mandi price variation (±5%).
+// ─────────────────────────────────────────────────────────────
+
+const EXPORT_CROP_BASE = {
+  Mango: { headlinePrice: 85.0, minPrice: 70, maxPrice: 100, arrivalsTonnes: 40, netEstimatedPrice: 79.9 },
+  Grapes: { headlinePrice: 65.0, minPrice: 55, maxPrice: 75, arrivalsTonnes: 55, netEstimatedPrice: 61.1 },
+  Pomegranate: { headlinePrice: 95.0, minPrice: 80, maxPrice: 110, arrivalsTonnes: 30, netEstimatedPrice: 89.3 },
+  Banana: { headlinePrice: 30.0, minPrice: 25, maxPrice: 35, arrivalsTonnes: 80, netEstimatedPrice: 28.2 },
+  Orange: { headlinePrice: 45.0, minPrice: 38, maxPrice: 52, arrivalsTonnes: 60, netEstimatedPrice: 42.3 },
+};
+
+MOCK_MANDIS.forEach((mandi) => {
+  Object.entries(EXPORT_CROP_BASE).forEach(([crop, base]) => {
+    if (!mandi.prices[crop]) {
+      const variation = 0.95 + Math.random() * 0.10; // ±5%
+      mandi.prices[crop] = {
+        headlinePrice: +(base.headlinePrice * variation).toFixed(2),
+        minPrice: +(base.minPrice * variation).toFixed(2),
+        maxPrice: +(base.maxPrice * variation).toFixed(2),
+        arrivalsTonnes: base.arrivalsTonnes,
+        netEstimatedPrice: +(base.netEstimatedPrice * variation).toFixed(2),
+      };
+    }
+  });
+});
+
+// ─────────────────────────────────────────────────────────────
+//  Localization Helpers
+// ─────────────────────────────────────────────────────────────
 
 export function getMandiName(m: MandiMarket, lang: Language): string {
   if (lang === "hi") return m.nameHi;
@@ -875,6 +906,12 @@ export const CROP_LABELS: Record<string, { en: string; hi: string; mr: string }>
   Soybeans: { en: "Soybeans", hi: "सोयाबीन", mr: "सोयाबीन" },
   Wheat: { en: "Wheat", hi: "गेहूं", mr: "गहू" },
   Cotton: { en: "Cotton", hi: "कपास", mr: "कापूस" },
+  // 🆕 Export crops
+  Mango: { en: "Mango", hi: "आम", mr: "आंबा" },
+  Grapes: { en: "Grapes", hi: "अंगूर", mr: "द्राक्ष" },
+  Pomegranate: { en: "Pomegranate", hi: "अनार", mr: "डाळिंब" },
+  Banana: { en: "Banana", hi: "केला", mr: "केळी" },
+  Orange: { en: "Orange", hi: "संतरा", mr: "संत्री" },
 };
 
 export function getCropLabel(cropId: string, lang: Language): string {

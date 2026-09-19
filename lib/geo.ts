@@ -68,8 +68,11 @@ export function distanceFromOrigin(
     }
     return roadDistanceKm(origin.lat, origin.lng, mandi.lat, mandi.lng);
 }
-// Free geocoding via OpenStreetMap Nominatim (no API key).
-// Use this if you later want free-text "any village" input.
+
+// ─────────────────────────────────────────────────────────────
+//  FREE GEOCODING via OpenStreetMap Nominatim (no API key)
+// ─────────────────────────────────────────────────────────────
+
 export async function geocodePlace(
     query: string
 ): Promise<{ lat: number; lng: number; label: string } | null> {
@@ -78,7 +81,13 @@ export async function geocodePlace(
             `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=in&q=${encodeURIComponent(
                 query
             )}`,
-            { headers: { "Accept-Language": "en" } }
+            {
+                headers: {
+                    "Accept-Language": "en",
+                    // ⚠️ Nominatim REQUIREs a User-Agent — without it you get 403
+                    "User-Agent": "FarmOptima/1.0 (hackathon)",
+                },
+            }
         );
         if (!res.ok) return null;
         const data = await res.json();
@@ -91,4 +100,49 @@ export async function geocodePlace(
     } catch {
         return null;
     }
+}
+
+// ─────────────────────────────────────────────────────────────
+//  MARKET GEOCODING (for data.gov.in market names)
+//  Cleans API names like "APMC Akola " or "Amrawati(Frui & Veg. Market)"
+//  then geocodes via Nominatim. Results are cached in memory.
+// ─────────────────────────────────────────────────────────────
+
+const geocodeMarketCache = new Map<string, { lat: number; lng: number }>();
+
+export async function geocodeMarket(
+    marketName: string,
+    district: string
+): Promise<{ lat: number; lng: number } | null> {
+    // Clean: "APMC Akola " → "Akola", "Amrawati(Frui & Veg. Market)" → "Amrawati"
+    const cleaned = marketName
+        .replace(/\bAPMC\b/gi, "")
+        .replace(/\(.*?\)/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+    const cacheKey = `${cleaned}|${district}`;
+    if (geocodeMarketCache.has(cacheKey)) {
+        return geocodeMarketCache.get(cacheKey)!;
+    }
+
+    // Try multiple queries, most specific first
+    const queries = [
+        `${cleaned}, ${district}, Maharashtra, India`,
+        `${cleaned}, Maharashtra, India`,
+        `${district}, Maharashtra, India`,
+    ];
+
+    for (const q of queries) {
+        const result = await geocodePlace(q);
+        if (result) {
+            const coords = { lat: result.lat, lng: result.lng };
+            geocodeMarketCache.set(cacheKey, coords);
+            return coords;
+        }
+        // Nominatim rate limit: max 1 req/sec — add delay between tries
+        await new Promise((r) => setTimeout(r, 1100));
+    }
+
+    return null;
 }

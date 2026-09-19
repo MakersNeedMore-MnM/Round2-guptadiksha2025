@@ -5,7 +5,7 @@
     --background: #fbf9f5;
     --foreground: #1c2420;
   }
-  
+
   body {
     background-color: var(--background);
     color: var(--foreground);
@@ -13,7 +13,10 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  h1, h2, h3, .font-serif-title {
+  h1,
+  h2,
+  h3,
+  .font-serif-title {
     font-family: var(--font-playfair), Georgia, serif;
   }
 }
@@ -41,4 +44,16 @@
 
 .border-editorial {
   border-color: #e6e2d8;
+}
+
+/* Hide horizontal scrollbar but keep scrolling */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  /* IE/Edge */
+  scrollbar-width: none;
+  /* Firefox */
 }

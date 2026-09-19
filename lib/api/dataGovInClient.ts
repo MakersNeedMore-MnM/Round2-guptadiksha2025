@@ -35,28 +35,34 @@ export async function fetchMandiPrices(
     const params = new URLSearchParams({
         "api-key": apiKey,
         format: "json",
-        limit: String(opts.limit ?? 500),
+        limit: String(opts.limit ?? 2000),   // ← badha diya (500 → 2000)
     });
 
-    // Server-side filtering
+    // State filter only if explicitly provided
     if (opts.state) params.append("filters[state]", opts.state);
     if (opts.commodity) params.append("filters[commodity]", opts.commodity);
 
     const controller = new AbortController();
     const timeout = setTimeout(
         () => controller.abort(),
-        opts.timeoutMs ?? 6000
+        opts.timeoutMs ?? 10000    // ← badha diya (6000 → 10000)
     );
 
     try {
         const res = await fetch(`${BASE_URL}?${params.toString()}`, {
             signal: controller.signal,
-            // Cache for 30 min — mandi data doesn't change that often
+            headers: {
+                "User-Agent": "FarmOptima/1.0 (hackathon)",
+                "Accept": "application/json",
+            },
             next: { revalidate: 1800 },
         });
 
         if (!res.ok) {
-            throw new Error(`data.gov.in responded ${res.status}`);
+            const body = await res.text().catch(() => "<no body>");
+            throw new Error(
+                `data.gov.in responded ${res.status} — ${body.slice(0, 200)}`
+            );
         }
 
         const json = await res.json();

@@ -46,6 +46,12 @@ export const translations = {
     cropSoybeans: "Soybeans",
     cropWheat: "Wheat",
     cropCotton: "Cotton",
+    // 🆕 Export crops
+    cropMango: "Mango",
+    cropGrapes: "Grapes",
+    cropPomegranate: "Pomegranate",
+    cropBanana: "Banana",
+    cropOrange: "Orange",
 
     // Product Mockup
     mockupBadge: "Product Deep Dive",
@@ -123,8 +129,6 @@ export const translations = {
     authQuestionLanguage: "Which language do you prefer?",
     authCompleteBtn: "Complete Profile & Start",
 
-
-
     // ─── Bottom Harvest Panel ───
     harvestPrompt: "What's your harvest?",
     harvestCropLabel: "CROP",
@@ -180,7 +184,6 @@ export const translations = {
     heroTestimonialLocation: "निर्णय सहायता • महाराष्ट्र मंडियां",
     harvestAgeLabel: "फसल की आयु (दिन)",
 
-
     // Crop names
     cropTomatoes: "टमाटर",
     cropOnions: "लाल प्याज",
@@ -188,6 +191,12 @@ export const translations = {
     cropSoybeans: "सोयाबीन",
     cropWheat: "गेहूं",
     cropCotton: "कपास",
+    // 🆕 Export crops
+    cropMango: "आम",
+    cropGrapes: "अंगूर",
+    cropPomegranate: "अनार",
+    cropBanana: "केला",
+    cropOrange: "संतरा",
 
     // Product Mockup
     mockupBadge: "उत्पाद की विशेषताएं",
@@ -265,8 +274,6 @@ export const translations = {
     authQuestionLanguage: "आप किस भाषा को प्राथमिकता देते हैं?",
     authCompleteBtn: "प्रोफाइल पूर्ण करें और शुरू करें",
 
-
-
     // ─── Bottom Harvest Panel ───
     harvestPrompt: "आपकी फसल क्या है?",
     harvestCropLabel: "फसल",
@@ -319,6 +326,13 @@ export const translations = {
     cropSoybeans: "सोयाबीन",
     cropWheat: "गहू",
     cropCotton: "कापूस",
+    // 🆕 Export crops
+    cropMango: "आंबा",
+    cropGrapes: "द्राक्ष",
+    cropPomegranate: "डाळिंब",
+    cropBanana: "केळी",
+    cropOrange: "संत्री",
+
     headerCanvasTitle: "मंडी नकाशा कॅनव्हास",
 
     // Product Mockup
@@ -405,8 +419,6 @@ export const translations = {
     authQuestionLanguage: "तुम्ही कोणती भाषा पसंत करता?",
     authCompleteBtn: "प्रोफाईल पूर्ण करा आणि सुरू करा",
 
-
-
     // ─── Bottom Harvest Panel ───
     harvestPrompt: "तुमचे पीक काय आहे?",
     harvestCropLabel: "पीक",
@@ -423,7 +435,6 @@ export const translations = {
     drawerArrivalVolume: "आवक प्रमाण",
     drawerViewRoute: "मार्ग पहा",
     drawerKm: "किमी मूळ स्थानापासून",
-
   },
 };
 

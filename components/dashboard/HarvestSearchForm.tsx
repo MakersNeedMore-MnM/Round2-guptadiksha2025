@@ -29,7 +29,7 @@ export default function HarvestSearchForm({
 
   const [quantity, setQuantity] = useState("5000");
   const [ageDays, setAgeDays] = useState("2");
-  const [originId, setOriginId] = useState<string>("pune"); // will be overwritten below
+  const [originId, setOriginId] = useState<string>("pune");
   const [location, setLocation] = useState("Pune");
 
   // On mount, read the user's saved profile from localStorage
@@ -67,13 +67,23 @@ export default function HarvestSearchForm({
     }
   }, []);
 
+  // All 13 crops — 6 vegetables + 7 fruits
   const CROP_OPTIONS: { id: string; emoji: string }[] = [
+    // ─── Vegetables ───
     { id: "Tomatoes", emoji: "🍅" },
     { id: "Onions", emoji: "🧅" },
     { id: "Potatoes", emoji: "🥔" },
     { id: "Soybeans", emoji: "🌱" },
     { id: "Wheat", emoji: "🌾" },
     { id: "Cotton", emoji: "☁️" },
+    // ─── Fruits ───
+    { id: "Mango", emoji: "🥭" },
+    { id: "Grapes", emoji: "🍇" },
+    { id: "Pomegranate", emoji: "🍎" },
+    { id: "Banana", emoji: "🍌" },
+    { id: "Orange", emoji: "🍊" },
+    { id: "Chikoo", emoji: "🟤" },
+    { id: "Apple", emoji: "🍏" },
   ];
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -111,11 +121,22 @@ export default function HarvestSearchForm({
             onChange={(e) => onCropChange(e.target.value)}
             className="w-full px-3.5 py-2.5 rounded-xl border border-[#e6e2d8] bg-white text-xs font-semibold text-stone-800 outline-none focus:border-emerald-800"
           >
-            {CROP_OPTIONS.map((crop) => (
-              <option key={crop.id} value={crop.id}>
-                {crop.emoji} {getCropLabel(crop.id, lang)}
-              </option>
-            ))}
+            {/* Vegetables group */}
+            <optgroup label="🥬 Vegetables">
+              {CROP_OPTIONS.slice(0, 6).map((crop) => (
+                <option key={crop.id} value={crop.id}>
+                  {crop.emoji} {getCropLabel(crop.id, lang)}
+                </option>
+              ))}
+            </optgroup>
+            {/* Fruits group */}
+            <optgroup label="🍎 Fruits">
+              {CROP_OPTIONS.slice(6).map((crop) => (
+                <option key={crop.id} value={crop.id}>
+                  {crop.emoji} {getCropLabel(crop.id, lang)}
+                </option>
+              ))}
+            </optgroup>
           </select>
         </div>
 
@@ -151,7 +172,7 @@ export default function HarvestSearchForm({
           </div>
         </div>
 
-        {/* Origin (from user profile by default) */}
+        {/* Origin */}
         <div className="sm:col-span-2">
           <label className="text-[10px] font-bold text-stone-400 uppercase tracking-widest block mb-1">
             {t.harvestOriginLabel}

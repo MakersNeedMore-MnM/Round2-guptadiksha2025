@@ -1,4 +1,5 @@
-export type Language = "en" | "hi" | "mr";
+import type { Language } from "./types";
+export type { Language };
 
 export const translations = {
   en: {
@@ -10,6 +11,17 @@ export const translations = {
     navExplore: "Explore Platform",
     navProfile: "My Profile",
     navLogout: "Log Out",
+    headerCanvasTitle: "Mandi Map Canvas",
+
+    harvestAgeLabel: "Crop Age (days)",
+    // Sidebar
+    sidebarDashboard: "Dashboard",
+    sidebarMyHarvest: "My Harvest",
+    sidebarMarkets: "Markets",
+    sidebarRouteMesh: "RouteMesh",
+    sidebarRecommendations: "Recommendations",
+    sidebarProfile: "Profile",
+    sidebarSettings: "Settings",
 
     // Hero
     heroBadge: "Agricultural Selling Intelligence",
@@ -110,6 +122,25 @@ export const translations = {
     authQuestionCrops: "What are your major crops?",
     authQuestionLanguage: "Which language do you prefer?",
     authCompleteBtn: "Complete Profile & Start",
+
+
+
+    // ─── Bottom Harvest Panel ───
+    harvestPrompt: "What's your harvest?",
+    harvestCropLabel: "CROP",
+    harvestQuantityLabel: "QUANTITY (KG)",
+    harvestOriginLabel: "ORIGIN LOCATION",
+    harvestFindBest: "FIND BEST OPTION",
+    harvestOriginPlaceholder: "Village/Town, District",
+
+    // ─── Market Detail Drawer ───
+    drawerCongestion: "Market Congestion",
+    drawerCongestionLow: "Low",
+    drawerCongestionMedium: "Medium",
+    drawerCongestionHigh: "High",
+    drawerArrivalVolume: "Arrival Volume",
+    drawerViewRoute: "View Route",
+    drawerKm: "km from origin",
   },
 
   hi: {
@@ -121,6 +152,16 @@ export const translations = {
     navExplore: "प्लेटफॉर्म देखें",
     navProfile: "मेरी प्रोफाइल",
     navLogout: "लॉग आउट",
+    // Sidebar
+    sidebarDashboard: "डैशबोर्ड",
+    sidebarMyHarvest: "मेरी फसल",
+    sidebarMarkets: "मंडियां",
+    sidebarRouteMesh: "रूटमैश",
+    sidebarRecommendations: "सिफारिशें",
+    sidebarProfile: "प्रोफाइल",
+    sidebarSettings: "सेटिंग्स",
+
+    headerCanvasTitle: "मंडी नक्शा कैनवास",
 
     // Hero
     heroBadge: "कृषि बिक्री निर्णय प्रणाली",
@@ -137,6 +178,8 @@ export const translations = {
     heroStatSavedLabel: "मालभाड़ा खर्च में बचत",
     heroTestimonial: "“निव्वल कमाई का हिसाब समझकर हमारी सहकारी समिति को मुंबई टमाटर भेजते समय ₹28,000 की सीधी बचत हुई।”",
     heroTestimonialLocation: "निर्णय सहायता • महाराष्ट्र मंडियां",
+    harvestAgeLabel: "फसल की आयु (दिन)",
+
 
     // Crop names
     cropTomatoes: "टमाटर",
@@ -221,6 +264,25 @@ export const translations = {
     authQuestionCrops: "आपकी मुख्य फसलें कौन सी हैं?",
     authQuestionLanguage: "आप किस भाषा को प्राथमिकता देते हैं?",
     authCompleteBtn: "प्रोफाइल पूर्ण करें और शुरू करें",
+
+
+
+    // ─── Bottom Harvest Panel ───
+    harvestPrompt: "आपकी फसल क्या है?",
+    harvestCropLabel: "फसल",
+    harvestQuantityLabel: "मात्रा (किग्रा)",
+    harvestOriginLabel: "फसल का स्थान",
+    harvestFindBest: "सर्वश्रेष्ठ विकल्प खोजें",
+    harvestOriginPlaceholder: "गांव/शहर, जिला",
+
+    // ─── Market Detail Drawer ───
+    drawerCongestion: "बाजार भीड़",
+    drawerCongestionLow: "कम",
+    drawerCongestionMedium: "मध्यम",
+    drawerCongestionHigh: "अधिक",
+    drawerArrivalVolume: "आवक मात्रा",
+    drawerViewRoute: "रास्ता देखें",
+    drawerKm: "किमी मूल स्थान से",
   },
 
   mr: {
@@ -232,6 +294,7 @@ export const translations = {
     navExplore: "प्लॅटफॉर्म पहा",
     navProfile: "माझी प्रोफाईल",
     navLogout: "लॉग आउट",
+    harvestAgeLabel: "पिकाचे वय (दिवस)",
 
     // Hero
     heroBadge: "शेती विक्री बुद्धिमत्ता",
@@ -256,6 +319,7 @@ export const translations = {
     cropSoybeans: "सोयाबीन",
     cropWheat: "गहू",
     cropCotton: "कापूस",
+    headerCanvasTitle: "मंडी नकाशा कॅनव्हास",
 
     // Product Mockup
     mockupBadge: "उत्पादन वैशिष्ट्ये",
@@ -302,6 +366,14 @@ export const translations = {
     step2Desc: "आमचे इंजिन दर अंदाज, वाहतूक खर्च आणि जोखमीची तपासणी करते.",
     step3Title: "गाडी शेअर करा आणि विका",
     step3Desc: "उत्तम बाजार समिती निवडा आणि रूटमेशद्वारे वाहतूक खर्चात बचत करा.",
+    // Sidebar
+    sidebarDashboard: "डॅशबोर्ड",
+    sidebarMyHarvest: "माझे पीक",
+    sidebarMarkets: "बाजार समित्या",
+    sidebarRouteMesh: "रूटमेश",
+    sidebarRecommendations: "शिफारसी",
+    sidebarProfile: "प्रोफाईल",
+    sidebarSettings: "सेटिंग्ज",
 
     // Final CTA & Footer
     ctaBadge: "मोफत सुरुवात करा",
@@ -332,6 +404,26 @@ export const translations = {
     authQuestionCrops: "तुमची मुख्य पिके कोणती आहेत?",
     authQuestionLanguage: "तुम्ही कोणती भाषा पसंत करता?",
     authCompleteBtn: "प्रोफाईल पूर्ण करा आणि सुरू करा",
+
+
+
+    // ─── Bottom Harvest Panel ───
+    harvestPrompt: "तुमचे पीक काय आहे?",
+    harvestCropLabel: "पीक",
+    harvestQuantityLabel: "प्रमाण (किलो)",
+    harvestOriginLabel: "पिकाचे ठिकाण",
+    harvestFindBest: "सर्वोत्तम पर्याय शोधा",
+    harvestOriginPlaceholder: "गाव/शहर, जिल्हा",
+
+    // ─── Market Detail Drawer ───
+    drawerCongestion: "बाजार गर्दी",
+    drawerCongestionLow: "कमी",
+    drawerCongestionMedium: "मध्यम",
+    drawerCongestionHigh: "जास्त",
+    drawerArrivalVolume: "आवक प्रमाण",
+    drawerViewRoute: "मार्ग पहा",
+    drawerKm: "किमी मूळ स्थानापासून",
+
   },
 };
 

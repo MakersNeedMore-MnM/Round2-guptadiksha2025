@@ -53,6 +53,7 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModal
       const parsed = JSON.parse(existing);
       onLoginSuccess(parsed);
       onClose();
+      window.location.reload();
     } else {
       // First-time login -> Trigger Onboarding Questions!
       setAuthMode("onboarding");
@@ -82,6 +83,7 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModal
     setLanguage(prefLanguage);
     onLoginSuccess(userProfile);
     onClose();
+    window.location.reload();
   };
 
   const cropsList = [
@@ -307,8 +309,8 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModal
                         type="button"
                         onClick={() => toggleCrop(crop.id)}
                         className={`p-2.5 rounded-xl text-xs font-medium flex items-center justify-between border transition-all ${isSelected
-                            ? "bg-emerald-50 border-emerald-800 text-emerald-950 font-bold"
-                            : "bg-white border-[#e6e2d8] text-stone-700 hover:bg-stone-50"
+                          ? "bg-emerald-50 border-emerald-800 text-emerald-950 font-bold"
+                          : "bg-white border-[#e6e2d8] text-stone-700 hover:bg-stone-50"
                           }`}
                       >
                         <span className="flex items-center space-x-1.5">

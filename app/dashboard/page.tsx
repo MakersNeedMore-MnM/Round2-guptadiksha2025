@@ -17,6 +17,15 @@ import { fetchMandiDataAction } from "@/app/actions/mandi";
 import { EXPORT_MANDIS, isFruitCrop } from "@/lib/exportMandiData";
 import MandiLeaderboard from "@/components/dashboard/MandiLeaderboard";
 
+// Dedicated Views for Sidebar Navigation
+import MyHarvestView from "@/components/dashboard/views/MyHarvestView";
+import MarketsView from "@/components/dashboard/views/MarketsView";
+import RouteMeshView from "@/components/dashboard/views/RouteMeshView";
+import RecommendationsView from "@/components/dashboard/views/RecommendationsView";
+import ChatbotSection from "@/components/dashboard/ChatbotSection";
+import ProfileView from "@/components/dashboard/views/ProfileView";
+import SettingsView from "@/components/dashboard/views/SettingsView";
+
 const EXPORT_CROPS = new Set([
   "Mango", "Grapes", "Pomegranate", "Banana", "Orange", "Chikoo", "Apple",
 ]);
@@ -161,6 +170,29 @@ export default function DashboardPage() {
     { id: "Apple", emoji: "🍏" },
   ];
 
+  const getHeaderTitle = () => {
+    switch (activeTab) {
+      case "dashboard":
+        return t.headerCanvasTitle ?? "Mandi Map Canvas";
+      case "harvest":
+        return "Farm Harvest Batches";
+      case "markets":
+        return "Mandi Directory & Live Rates";
+      case "routemesh":
+        return "RouteMesh™ Logistics Hub";
+      case "recommendations":
+        return "Net Realization Engine";
+      case "chatbot":
+        return "FarmOptima AI Agri-Agent";
+      case "profile":
+        return "Farmer Profile";
+      case "settings":
+        return "Settings & Preferences";
+      default:
+        return "FarmOptima";
+    }
+  };
+
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#fbf9f5] font-sans">
 
@@ -174,30 +206,39 @@ export default function DashboardPage() {
 
       <main className="flex-1 flex flex-col h-full relative overflow-hidden">
 
-        <header className="h-16 px-6 bg-[#fbf9f5] border-b border-[#e6e2d8] flex items-center gap-6 z-20">
+        {/* Dynamic Top Header */}
+        <header className="h-16 px-6 bg-[#fbf9f5] border-b border-[#e6e2d8] flex items-center justify-between gap-6 z-20 shrink-0">
 
-          {/* LEFT: Title */}
-          <div className="shrink-0">
+          {/* LEFT: Dynamic View Title */}
+          <div className="shrink-0 flex items-center space-x-2">
             <span className="text-xs font-bold uppercase tracking-widest text-amber-900 whitespace-nowrap">
-              {t.headerCanvasTitle ?? "Mandi Map Canvas"}
+              {getHeaderTitle()}
             </span>
           </div>
 
-          {/* CENTER: Crop pills */}
-          <div className="flex-1 min-w-0 flex items-center gap-2 overflow-x-auto no-scrollbar px-2">
-            {crops.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => setSelectedCrop(c.id)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap shrink-0 ${selectedCrop === c.id
-                  ? "bg-amber-400 text-stone-950 font-bold shadow-sm ring-1 ring-amber-500"
-                  : "bg-white text-stone-700 hover:bg-amber-50 border border-[#e6e2d8] hover:border-amber-300"
-                  }`}
-              >
-                {c.emoji} {getCropLabel(c.id, lang)}
-              </button>
-            ))}
-          </div>
+          {/* CENTER: Crop pills (shown on Dashboard, Markets, Recommendations) */}
+          {activeTab === "dashboard" ? (
+            <div className="flex-1 min-w-0 flex items-center gap-2 overflow-x-auto no-scrollbar px-2">
+              {crops.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => setSelectedCrop(c.id)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap shrink-0 ${selectedCrop === c.id
+                    ? "bg-amber-400 text-stone-950 font-bold shadow-sm ring-1 ring-amber-500"
+                    : "bg-white text-stone-700 hover:bg-amber-50 border border-[#e6e2d8] hover:border-amber-300"
+                    }`}
+                >
+                  {c.emoji} {getCropLabel(c.id, lang)}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="flex-1 min-w-0 flex items-center px-2">
+              <span className="text-[11px] text-stone-400 hidden sm:inline">
+                Decision Support Platform • Agricultural Intelligence & Logistics
+              </span>
+            </div>
+          )}
 
           {/* RIGHT: Live badge + Language + User */}
           <div className="flex items-center gap-3 shrink-0">
@@ -236,7 +277,7 @@ export default function DashboardPage() {
             <LanguageSelector />
 
             {userProfile && (
-              <div className="px-3 py-1.5 bg-stone-100 rounded-full border border-stone-200 text-xs font-semibold text-stone-800 flex items-center gap-2 max-w-[140px]">
+              <div className="px-3 py-1.5 bg-stone-100 rounded-full border border-stone-200 text-xs font-semibold text-stone-800 flex items-center gap-2 max-w-[150px]">
                 <User className="w-3.5 h-3.5 text-amber-800 shrink-0" />
                 <span className="truncate">{userProfile.name}</span>
               </div>
@@ -245,40 +286,100 @@ export default function DashboardPage() {
 
         </header>
 
-        <div className="flex-1 relative p-4 bg-[#f7f4ee]">
+        {/* Dynamic View Body based on activeTab */}
+        <div className="flex-1 relative overflow-hidden flex flex-col">
 
-          <InteractiveMap
-            mandis={mandis}
-            selectedCrop={selectedCrop}
-            selectedMandi={selectedMandi}
-            onSelectMandi={handleSelectMandi}
-            recommendedMandiId={recommendedMandiId}
-            origin={origin}
-          />
+          {/* TAB 1: DASHBOARD (Mandi Map Canvas) */}
+          {activeTab === "dashboard" && (
+            <div className="flex-1 relative p-4 bg-[#f7f4ee] h-full overflow-hidden">
+              <InteractiveMap
+                mandis={mandis}
+                selectedCrop={selectedCrop}
+                selectedMandi={selectedMandi}
+                onSelectMandi={handleSelectMandi}
+                recommendedMandiId={recommendedMandiId}
+                origin={origin}
+              />
 
-          <MandiLeaderboard
-            recommendation={recommendation}
-            onSelectMandiId={(id) => {
-              const m = mandis.find((x) => x.id === id);
-              if (m) setSelectedMandi(m);
-            }}
-          />
+              <MandiLeaderboard
+                recommendation={recommendation}
+                onSelectMandiId={(id) => {
+                  const m = mandis.find((x) => x.id === id);
+                  if (m) setSelectedMandi(m);
+                }}
+              />
 
-          <MarketDetailDrawer
-            mandi={selectedMandi}
-            selectedCrop={selectedCrop}
-            onClose={() => setSelectedMandi(null)}
-            isRecommended={selectedMandi?.id === recommendedMandiId}
-            origin={origin}
-          />
+              <MarketDetailDrawer
+                mandi={selectedMandi}
+                selectedCrop={selectedCrop}
+                onClose={() => setSelectedMandi(null)}
+                isRecommended={selectedMandi?.id === recommendedMandiId}
+                origin={origin}
+              />
 
-          <div className="absolute bottom-6 left-6 right-6 z-20 max-w-4xl mx-auto">
-            <HarvestSearchForm
-              selectedCrop={selectedCrop}
-              onCropChange={(crop) => setSelectedCrop(crop)}
-              onSearch={handleHarvestSearch}
+              <div className="absolute bottom-6 left-6 right-6 z-20 max-w-4xl mx-auto">
+                <HarvestSearchForm
+                  selectedCrop={selectedCrop}
+                  onCropChange={(crop) => setSelectedCrop(crop)}
+                  onSearch={handleHarvestSearch}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: MY HARVEST */}
+          {activeTab === "harvest" && (
+            <MyHarvestView
+              onSelectCropForMandi={(crop) => {
+                setSelectedCrop(crop);
+                setActiveTab("dashboard");
+              }}
             />
-          </div>
+          )}
+
+          {/* TAB 3: MARKETS */}
+          {activeTab === "markets" && (
+            <MarketsView
+              selectedCrop={selectedCrop}
+              onCropChange={setSelectedCrop}
+              onSelectMandiOnMap={(mandi) => {
+                setSelectedMandi(mandi);
+                setActiveTab("dashboard");
+              }}
+            />
+          )}
+
+          {/* TAB 4: ROUTEMESH LOGISTICS */}
+          {activeTab === "routemesh" && (
+            <RouteMeshView />
+          )}
+
+          {/* TAB 5: RECOMMENDATIONS */}
+          {activeTab === "recommendations" && (
+            <RecommendationsView
+              selectedCrop={selectedCrop}
+              onCropChange={setSelectedCrop}
+              onNavigateToRouteMesh={() => setActiveTab("routemesh")}
+            />
+          )}
+
+          {/* TAB 6: AI ASSISTANT / AGENT Q&A */}
+          {activeTab === "chatbot" && (
+            <ChatbotSection />
+          )}
+
+          {/* TAB 7: PROFILE */}
+          {activeTab === "profile" && (
+            <ProfileView
+              userProfile={userProfile}
+              onUpdateProfile={(updated) => setUserProfile(updated)}
+            />
+          )}
+
+          {/* TAB 8: SETTINGS */}
+          {activeTab === "settings" && (
+            <SettingsView onLogout={handleLogout} />
+          )}
 
         </div>
 

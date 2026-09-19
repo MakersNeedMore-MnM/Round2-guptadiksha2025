@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowUpRight, Menu, X, User, LogOut, Sprout } from "lucide-react";
+import { ArrowUpRight, Menu, X, User, LogOut, Sprout, LayoutDashboard } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import LanguageSelector from "./LanguageSelector";
 import AuthModal, { UserProfile } from "./AuthModal";
@@ -78,7 +78,7 @@ export default function Navbar() {
                       <div className="pb-2 border-b border-stone-100">
                         <div className="font-bold text-stone-900 text-sm">{userProfile.name}</div>
                         <div className="text-[11px] text-stone-500">{userProfile.location}</div>
-                        {userProfile.phone && <div className="text-[11px] text-emerald-800 font-mono mt-0.5">+91 {userProfile.phone}</div>}
+                        {userProfile.username && <div className="text-[11px] text-emerald-800 font-mono mt-0.5">@{userProfile.username}</div>}
                       </div>
 
                       <div className="space-y-1 text-[11px]">
@@ -92,7 +92,15 @@ export default function Navbar() {
                         </div>
                       </div>
 
-                      <div className="pt-2 border-t border-stone-100">
+                      <div className="pt-2 border-t border-stone-100 space-y-1">
+                        <Link
+                          href="/dashboard"
+                          onClick={() => setIsProfileDropdownOpen(false)}
+                          className="w-full text-left py-1.5 text-xs text-emerald-900 font-semibold hover:underline flex items-center space-x-1.5"
+                        >
+                          <LayoutDashboard className="w-3.5 h-3.5" />
+                          <span>Open Mandi Dashboard</span>
+                        </Link>
                         <button
                           onClick={handleLogout}
                           className="w-full text-left py-1.5 text-xs text-red-600 font-semibold hover:underline flex items-center space-x-1.5"
@@ -114,13 +122,13 @@ export default function Navbar() {
                 </button>
               )}
 
-              <a
-                href="#market-realization"
+              <Link
+                href="/dashboard"
                 className="inline-flex items-center space-x-1 bg-[#0b2b1d] hover:bg-[#143e2c] text-white text-xs font-medium uppercase tracking-wider px-5 py-2.5 rounded-full shadow-xs transition-all"
               >
                 <span>{t.navExplore}</span>
                 <ArrowUpRight className="w-3.5 h-3.5 opacity-80" />
-              </a>
+              </Link>
             </div>
 
             {/* Mobile Menu & Language Toggle */}
@@ -171,13 +179,13 @@ export default function Navbar() {
                       {t.navLogIn}
                     </button>
                   )}
-                  <a
-                    href="#market-realization"
+                  <Link
+                    href="/dashboard"
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="text-center bg-[#0b2b1d] text-white font-medium text-xs uppercase tracking-wider py-3 rounded-full"
+                    className="text-center bg-[#0b2b1d] text-white font-medium text-xs uppercase tracking-wider py-3 rounded-full block"
                   >
                     {t.navExplore}
-                  </a>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -189,7 +197,10 @@ export default function Navbar() {
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
-        onLoginSuccess={(profile) => setUserProfile(profile)}
+        onLoginSuccess={(profile) => {
+          setUserProfile(profile);
+          window.location.href = "/dashboard";
+        }}
       />
     </>
   );

@@ -20,6 +20,7 @@ export const translations = {
     sidebarMarkets: "Markets",
     sidebarRouteMesh: "RouteMesh",
     sidebarRecommendations: "Recommendations",
+    sidebarAiAgent: "AI Agent (Q&A)",
     sidebarProfile: "Profile",
     sidebarSettings: "Settings",
 
@@ -162,6 +163,7 @@ export const translations = {
     sidebarMarkets: "मंडियां",
     sidebarRouteMesh: "रूटमैश",
     sidebarRecommendations: "सिफारिशें",
+    sidebarAiAgent: "एआई एजेंट (Q&A)",
     sidebarProfile: "प्रोफाइल",
     sidebarSettings: "सेटिंग्स",
 
@@ -386,6 +388,7 @@ export const translations = {
     sidebarMarkets: "बाजार समित्या",
     sidebarRouteMesh: "रूटमेश",
     sidebarRecommendations: "शिफारसी",
+    sidebarAiAgent: "एआय एजंट (Q&A)",
     sidebarProfile: "प्रोफाईल",
     sidebarSettings: "सेटिंग्ज",
 

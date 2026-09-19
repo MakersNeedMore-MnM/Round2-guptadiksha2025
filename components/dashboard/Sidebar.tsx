@@ -13,6 +13,7 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  MessageSquare
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 
@@ -40,6 +41,7 @@ export default function Sidebar({
     { id: "markets", label: t.sidebarMarkets, icon: Store },
     { id: "routemesh", label: t.sidebarRouteMesh, icon: Truck },
     { id: "recommendations", label: t.sidebarRecommendations, icon: Sparkles },
+    { id: "chatbot", label: t.sidebarAiAgent || "AI Agent (Q&A)", icon: MessageSquare },
     { id: "profile", label: t.sidebarProfile, icon: User },
     { id: "settings", label: t.sidebarSettings, icon: Settings },
   ];

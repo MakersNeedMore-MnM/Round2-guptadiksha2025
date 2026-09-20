@@ -122,13 +122,23 @@ export default function Navbar() {
                 </button>
               )}
 
-              <Link
-                href="/dashboard"
-                className="inline-flex items-center space-x-1 bg-[#0b2b1d] hover:bg-[#143e2c] text-white text-xs font-medium uppercase tracking-wider px-5 py-2.5 rounded-full shadow-xs transition-all"
-              >
-                <span>{t.navExplore}</span>
-                <ArrowUpRight className="w-3.5 h-3.5 opacity-80" />
-              </Link>
+              {userProfile ? (
+                <Link
+                  href="/dashboard"
+                  className="inline-flex items-center space-x-1 bg-[#0b2b1d] hover:bg-[#143e2c] text-white text-xs font-medium uppercase tracking-wider px-5 py-2.5 rounded-full shadow-xs transition-all"
+                >
+                  <span>{t.navExplore}</span>
+                  <ArrowUpRight className="w-3.5 h-3.5 opacity-80" />
+                </Link>
+              ) : (
+                <button
+                  onClick={() => setIsAuthModalOpen(true)}
+                  className="inline-flex items-center space-x-1 bg-[#0b2b1d] hover:bg-[#143e2c] text-white text-xs font-medium uppercase tracking-wider px-5 py-2.5 rounded-full shadow-xs transition-all"
+                >
+                  <span>{t.navExplore}</span>
+                  <ArrowUpRight className="w-3.5 h-3.5 opacity-80" />
+                </button>
+              )}
             </div>
 
             {/* Mobile Menu & Language Toggle */}
@@ -179,13 +189,25 @@ export default function Navbar() {
                       {t.navLogIn}
                     </button>
                   )}
-                  <Link
-                    href="/dashboard"
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="text-center bg-[#0b2b1d] text-white font-medium text-xs uppercase tracking-wider py-3 rounded-full block"
-                  >
-                    {t.navExplore}
-                  </Link>
+                  {userProfile ? (
+                    <Link
+                      href="/dashboard"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="text-center bg-[#0b2b1d] text-white font-medium text-xs uppercase tracking-wider py-3 rounded-full block"
+                    >
+                      {t.navExplore}
+                    </Link>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        setIsAuthModalOpen(true);
+                      }}
+                      className="text-center bg-[#0b2b1d] text-white font-medium text-xs uppercase tracking-wider py-3 rounded-full block w-full"
+                    >
+                      {t.navExplore}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

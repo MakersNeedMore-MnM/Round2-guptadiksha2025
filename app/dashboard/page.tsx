@@ -8,9 +8,9 @@ import HarvestSearchForm from "@/components/dashboard/HarvestSearchForm";
 import MarketDetailDrawer from "@/components/dashboard/MarketDetailDrawer";
 import RouteModal from "@/components/dashboard/RouteModal";
 import { MOCK_MANDIS, MandiMarket, getCropLabel } from "@/lib/mockMandiData";
-import { UserProfile } from "@/components/AuthModal";
+import AuthModal, { UserProfile } from "@/components/AuthModal";
 import { useLanguage } from "@/context/LanguageContext";
-import { User, Menu } from "lucide-react";
+import { User, Menu, Lock, ArrowLeft } from "lucide-react";
 import LanguageSelector from "@/components/LanguageSelector";
 import { PRESET_ORIGINS } from "@/lib/geo";
 import type { Language } from "@/lib/types";
@@ -44,9 +44,12 @@ export default function DashboardPage() {
   const { t, language } = useLanguage();
   const lang: Language = language ?? "en";
 
+  // Auth Guard State: null = checking localStorage, false = not logged in, true = logged in
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+
   const [recommendation, setRecommendation] = useState<RecommendationResult | null>(null);
   const [activeTab, setActiveTab] = useState("dashboard");
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Route Intelligence State
@@ -64,23 +67,34 @@ export default function DashboardPage() {
   const origin =
     PRESET_ORIGINS.find((o) => o.id === originId) ?? PRESET_ORIGINS[0];
 
+  // Auth Check on Mount: only allow logged-in users to view dashboard
   useEffect(() => {
     const saved = localStorage.getItem("farmoptima_user");
-    if (!saved) return;
+    if (!saved) {
+      setIsAuthenticated(false);
+      return;
+    }
     try {
       const profile = JSON.parse(saved) as UserProfile;
-      setUserProfile(profile);
-      const raw = (profile.location ?? "").toLowerCase();
-      const matched = PRESET_ORIGINS.find((o) =>
-        raw.includes(o.nameEn.toLowerCase())
-      );
-      if (matched) setOriginId(matched.id);
+      if (profile && (profile.name || profile.username)) {
+        setUserProfile(profile);
+        setIsAuthenticated(true);
+        const raw = (profile.location ?? "").toLowerCase();
+        const matched = PRESET_ORIGINS.find((o) =>
+          raw.includes(o.nameEn.toLowerCase())
+        );
+        if (matched) setOriginId(matched.id);
+      } else {
+        setIsAuthenticated(false);
+      }
     } catch (e) {
       console.error("Failed to parse user profile", e);
+      setIsAuthenticated(false);
     }
   }, []);
 
   useEffect(() => {
+    if (!isAuthenticated) return;
     let cancelled = false;
 
     if (isFruitCrop(selectedCrop)) {
@@ -105,10 +119,12 @@ export default function DashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [selectedCrop]);
+  }, [selectedCrop, isAuthenticated]);
 
   const handleLogout = () => {
     localStorage.removeItem("farmoptima_user");
+    setUserProfile(null);
+    setIsAuthenticated(false);
     window.location.href = "/";
   };
 
@@ -213,6 +229,64 @@ export default function DashboardPage() {
     }
   };
 
+  // 1. Loading State while checking authentication
+  if (isAuthenticated === null) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-[#fbf9f5] font-sans text-xs text-stone-500">
+        <div className="flex flex-col items-center space-y-3">
+          <div className="w-8 h-8 rounded-full border-2 border-emerald-800 border-t-transparent animate-spin" />
+          <span className="font-medium text-stone-700">Verifying FarmOptima farmer session...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Unauthenticated Gatekeeper: require login before opening dashboard
+  if (isAuthenticated === false) {
+    return (
+      <div className="min-h-screen w-screen flex flex-col items-center justify-center bg-[#fbf9f5] p-4 text-center font-sans relative">
+        <div className="max-w-md space-y-4 z-10">
+          <div className="inline-flex p-3 rounded-2xl bg-amber-100 text-amber-900 mb-2">
+            <Lock className="w-6 h-6" />
+          </div>
+          <h1 className="font-serif text-2xl sm:text-3xl font-bold text-stone-900">
+            Sign In Required
+          </h1>
+          <p className="text-xs text-stone-600 leading-relaxed">
+            Please sign in with your farmer account to access the live Maharashtra Mandi Intelligence Canvas and RouteMesh™ freight network.
+          </p>
+          <div className="pt-2">
+            <button
+              onClick={() => { window.location.href = "/"; }}
+              className="inline-flex items-center space-x-2 text-xs font-semibold text-stone-700 hover:text-stone-950 px-4 py-2 rounded-full border border-stone-300 hover:bg-stone-100 transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Back to Home</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Auth Modal Gatekeeper */}
+        <AuthModal
+          isOpen={true}
+          onClose={() => {
+            window.location.href = "/";
+          }}
+          onLoginSuccess={(profile) => {
+            setUserProfile(profile);
+            setIsAuthenticated(true);
+            const raw = (profile.location ?? "").toLowerCase();
+            const matched = PRESET_ORIGINS.find((o) =>
+              raw.includes(o.nameEn.toLowerCase())
+            );
+            if (matched) setOriginId(matched.id);
+          }}
+        />
+      </div>
+    );
+  }
+
+  // 3. Authenticated Dashboard View
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#fbf9f5] font-sans">
 
@@ -327,7 +401,7 @@ export default function DashboardPage() {
           {activeTab === "dashboard" && (
             <div className="flex-1 relative p-2 sm:p-4 bg-[#f7f4ee] h-full overflow-hidden flex flex-col">
               
-              {/* Main Leaflet Map with Route Drawing */}
+              {/* Main Leaflet Map with Route & Co-Loader Waypoint Dots */}
               <InteractiveMap
                 mandis={mandis}
                 selectedCrop={selectedCrop}
@@ -428,7 +502,7 @@ export default function DashboardPage() {
 
         </div>
 
-        {/* Turn-by-Turn Route Navigation & Logistics Modal */}
+        {/* Turn-by-Turn Route Navigation & Multi-Farmer Split Modal */}
         <RouteModal
           mandi={activeRouteMandi}
           origin={origin}

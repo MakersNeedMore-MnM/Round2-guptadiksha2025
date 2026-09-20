@@ -195,7 +195,7 @@ export default function MarketVsRealization() {
               </div>
 
               {/* Cost Deduction Breakdown Strip */}
-              <div className="pt-4 border-t border-stone-100 grid grid-cols-4 gap-3 text-center text-[11px]">
+              <div className="pt-4 border-t border-stone-100 grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 text-center text-[11px]">
                 <div className="p-3 bg-stone-50 rounded-lg border border-stone-200">
                   <span className="text-stone-400 block font-medium">{t.mockupGrossMandiRate}</span>
                   <span className="font-bold text-stone-800 text-sm mt-0.5 block">₹{current.headlinePrice.toFixed(2)}</span>
@@ -208,7 +208,7 @@ export default function MarketVsRealization() {
                   <span className="text-red-700 block font-medium">{t.mockupMandiFees}</span>
                   <span className="font-bold text-red-700 text-sm mt-0.5 block">− ₹{current.fees.toFixed(2)}</span>
                 </div>
-                <div className="p-3 bg-[#0b2b1d] text-white rounded-lg">
+                <div className="p-3 bg-[#0b2b1d] text-white rounded-lg col-span-2 sm:col-span-1">
                   <span className="text-amber-300 block font-medium">{t.mockupNetRealizationLabel}</span>
                   <span className="font-serif text-sm font-normal text-amber-300 mt-0.5 block">₹{current.netPrice.toFixed(2)}/kg</span>
                 </div>

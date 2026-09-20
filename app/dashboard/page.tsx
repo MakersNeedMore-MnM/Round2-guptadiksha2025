@@ -6,10 +6,11 @@ import dynamic from "next/dynamic";
 import Sidebar from "@/components/dashboard/Sidebar";
 import HarvestSearchForm from "@/components/dashboard/HarvestSearchForm";
 import MarketDetailDrawer from "@/components/dashboard/MarketDetailDrawer";
+import RouteModal from "@/components/dashboard/RouteModal";
 import { MOCK_MANDIS, MandiMarket, getCropLabel } from "@/lib/mockMandiData";
 import { UserProfile } from "@/components/AuthModal";
 import { useLanguage } from "@/context/LanguageContext";
-import { User } from "lucide-react";
+import { User, Menu } from "lucide-react";
 import LanguageSelector from "@/components/LanguageSelector";
 import { PRESET_ORIGINS } from "@/lib/geo";
 import type { Language } from "@/lib/types";
@@ -33,7 +34,7 @@ const EXPORT_CROPS = new Set([
 const InteractiveMap = dynamic(() => import("@/components/dashboard/InteractiveMap"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full min-h-[500px] rounded-2xl bg-stone-100 animate-pulse flex items-center justify-center text-xs text-stone-500 font-medium">
+    <div className="w-full h-full min-h-[420px] sm:min-h-[500px] rounded-2xl bg-stone-100 animate-pulse flex items-center justify-center text-xs text-stone-500 font-medium">
       Loading Maharashtra Interactive Mandi Map...
     </div>
   ),
@@ -46,6 +47,11 @@ export default function DashboardPage() {
   const [recommendation, setRecommendation] = useState<RecommendationResult | null>(null);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+  // Route Intelligence State
+  const [activeRouteMandi, setActiveRouteMandi] = useState<MandiMarket | null>(null);
+  const [isRouteModalOpen, setIsRouteModalOpen] = useState(false);
 
   const [mandis, setMandis] = useState<MandiMarket[]>(MOCK_MANDIS);
   const [dataSource, setDataSource] = useState<"api" | "fallback" | "curated">("fallback");
@@ -110,6 +116,15 @@ export default function DashboardPage() {
     setSelectedMandi(mandi);
   }, []);
 
+  const handleViewRoute = useCallback((mandi: MandiMarket) => {
+    setActiveRouteMandi(mandi);
+    setIsRouteModalOpen(true);
+  }, []);
+
+  const handleClearRoute = useCallback(() => {
+    setActiveRouteMandi(null);
+  }, []);
+
   const handleHarvestSearch = useCallback(
     (harvest: {
       crop: string;
@@ -145,10 +160,15 @@ export default function DashboardPage() {
       if (result.best) {
         setRecommendedMandiId(result.best.mandiId);
         const bestMandi = sourceMandis.find((m) => m.id === result.best!.mandiId);
-        if (bestMandi) setSelectedMandi(bestMandi);
+        if (bestMandi) {
+          setSelectedMandi(bestMandi);
+          // Set initial route to recommended best mandi
+          setActiveRouteMandi(bestMandi);
+        }
       } else {
         setRecommendedMandiId(undefined);
         setSelectedMandi(null);
+        setActiveRouteMandi(null);
       }
     },
     [originId, mandis]
@@ -196,21 +216,32 @@ export default function DashboardPage() {
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-[#fbf9f5] font-sans">
 
+      {/* Responsive Sidebar (Desktop Docked + Mobile Sliding Drawer) */}
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onLogout={handleLogout}
         userName={userProfile?.name}
         userLocation={userProfile?.location}
+        isOpenMobile={isMobileSidebarOpen}
+        onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
 
       <main className="flex-1 flex flex-col h-full relative overflow-hidden">
 
         {/* Dynamic Top Header */}
-        <header className="h-16 px-6 bg-[#fbf9f5] border-b border-[#e6e2d8] flex items-center justify-between gap-6 z-20 shrink-0">
+        <header className="h-16 px-4 sm:px-6 bg-[#fbf9f5] border-b border-[#e6e2d8] flex items-center justify-between gap-3 sm:gap-6 z-20 shrink-0">
 
-          {/* LEFT: Dynamic View Title */}
-          <div className="shrink-0 flex items-center space-x-2">
+          {/* LEFT: Mobile Menu Button + Dynamic View Title */}
+          <div className="shrink-0 flex items-center space-x-2.5">
+            <button
+              onClick={() => setIsMobileSidebarOpen(true)}
+              className="md:hidden p-2 -ml-1.5 rounded-xl text-stone-700 hover:text-stone-950 hover:bg-stone-200/60 transition-colors"
+              aria-label="Open Navigation Menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+
             <span className="text-xs font-bold uppercase tracking-widest text-amber-900 whitespace-nowrap">
               {getHeaderTitle()}
             </span>
@@ -218,15 +249,16 @@ export default function DashboardPage() {
 
           {/* CENTER: Crop pills (shown on Dashboard, Markets, Recommendations) */}
           {activeTab === "dashboard" ? (
-            <div className="flex-1 min-w-0 flex items-center gap-2 overflow-x-auto no-scrollbar px-2">
+            <div className="flex-1 min-w-0 flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar px-1 sm:px-2 touch-pan-x">
               {crops.map((c) => (
                 <button
                   key={c.id}
                   onClick={() => setSelectedCrop(c.id)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap shrink-0 ${selectedCrop === c.id
-                    ? "bg-amber-400 text-stone-950 font-bold shadow-sm ring-1 ring-amber-500"
-                    : "bg-white text-stone-700 hover:bg-amber-50 border border-[#e6e2d8] hover:border-amber-300"
-                    }`}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap shrink-0 ${
+                    selectedCrop === c.id
+                      ? "bg-amber-400 text-stone-950 font-bold shadow-sm ring-1 ring-amber-500"
+                      : "bg-white text-stone-700 hover:bg-amber-50 border border-[#e6e2d8] hover:border-amber-300"
+                  }`}
                 >
                   {c.emoji} {getCropLabel(c.id, lang)}
                 </button>
@@ -234,50 +266,52 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="flex-1 min-w-0 flex items-center px-2">
-              <span className="text-[11px] text-stone-400 hidden sm:inline">
+              <span className="text-[11px] text-stone-400 hidden lg:inline truncate">
                 Decision Support Platform • Agricultural Intelligence & Logistics
               </span>
             </div>
           )}
 
           {/* RIGHT: Live badge + Language + User */}
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
 
             {/* Live / India-wide / Offline badge */}
             <span
-              className={`hidden md:inline-flex items-center text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full border ${dataSource === "api"
-                ? "bg-amber-50 text-amber-800 border-amber-300"
-                : dataSource === "curated"
+              className={`hidden sm:inline-flex items-center text-[10px] font-bold uppercase tracking-wider px-2.5 sm:px-3 py-1 rounded-full border ${
+                dataSource === "api"
+                  ? "bg-amber-50 text-amber-800 border-amber-300"
+                  : dataSource === "curated"
                   ? "bg-purple-50 text-purple-800 border-purple-300"
                   : "bg-stone-100 text-stone-700 border-stone-300"
-                }`}
+              }`}
               title={
                 dataSource === "api"
                   ? "Live data from data.gov.in"
                   : dataSource === "curated"
-                    ? "Curated India-wide fruit mandis"
-                    : "Using local fallback data"
+                  ? "Curated India-wide fruit mandis"
+                  : "Using local fallback data"
               }
             >
               <span
-                className={`inline-block w-1.5 h-1.5 rounded-full mr-1.5 ${dataSource === "api"
-                  ? "bg-amber-600"
-                  : dataSource === "curated"
+                className={`inline-block w-1.5 h-1.5 rounded-full mr-1.5 ${
+                  dataSource === "api"
+                    ? "bg-amber-600"
+                    : dataSource === "curated"
                     ? "bg-purple-600"
                     : "bg-stone-500"
-                  }`}
+                }`}
               />
               {dataSource === "api"
                 ? "LIVE"
                 : dataSource === "curated"
-                  ? "INDIA-WIDE"
-                  : "OFFLINE"}
+                ? "INDIA-WIDE"
+                : "OFFLINE"}
             </span>
 
             <LanguageSelector />
 
             {userProfile && (
-              <div className="px-3 py-1.5 bg-stone-100 rounded-full border border-stone-200 text-xs font-semibold text-stone-800 flex items-center gap-2 max-w-[150px]">
+              <div className="hidden sm:flex px-3 py-1.5 bg-stone-100 rounded-full border border-stone-200 text-xs font-semibold text-stone-800 items-center gap-2 max-w-[130px] sm:max-w-[160px]">
                 <User className="w-3.5 h-3.5 text-amber-800 shrink-0" />
                 <span className="truncate">{userProfile.name}</span>
               </div>
@@ -291,7 +325,9 @@ export default function DashboardPage() {
 
           {/* TAB 1: DASHBOARD (Mandi Map Canvas) */}
           {activeTab === "dashboard" && (
-            <div className="flex-1 relative p-4 bg-[#f7f4ee] h-full overflow-hidden">
+            <div className="flex-1 relative p-2 sm:p-4 bg-[#f7f4ee] h-full overflow-hidden flex flex-col">
+              
+              {/* Main Leaflet Map with Route Drawing */}
               <InteractiveMap
                 mandis={mandis}
                 selectedCrop={selectedCrop}
@@ -299,25 +335,34 @@ export default function DashboardPage() {
                 onSelectMandi={handleSelectMandi}
                 recommendedMandiId={recommendedMandiId}
                 origin={origin}
+                activeRouteMandi={activeRouteMandi}
+                onClearRoute={handleClearRoute}
+                onOpenRouteDetails={handleViewRoute}
               />
 
+              {/* Mandi Leaderboard (Top-Left overlay) */}
               <MandiLeaderboard
                 recommendation={recommendation}
                 onSelectMandiId={(id) => {
                   const m = mandis.find((x) => x.id === id);
-                  if (m) setSelectedMandi(m);
+                  if (m) {
+                    setSelectedMandi(m);
+                  }
                 }}
               />
 
+              {/* Market Detail Drawer (Bottom sheet on Mobile, Top-Right on Laptop) */}
               <MarketDetailDrawer
                 mandi={selectedMandi}
                 selectedCrop={selectedCrop}
                 onClose={() => setSelectedMandi(null)}
+                onViewRoute={handleViewRoute}
                 isRecommended={selectedMandi?.id === recommendedMandiId}
                 origin={origin}
               />
 
-              <div className="absolute bottom-6 left-6 right-6 z-20 max-w-4xl mx-auto">
+              {/* Bottom Harvest Search Form */}
+              <div className="absolute bottom-3 sm:bottom-6 left-3 sm:left-6 right-3 sm:right-6 z-20 max-w-4xl mx-auto pointer-events-auto">
                 <HarvestSearchForm
                   selectedCrop={selectedCrop}
                   onCropChange={(crop) => setSelectedCrop(crop)}
@@ -382,6 +427,19 @@ export default function DashboardPage() {
           )}
 
         </div>
+
+        {/* Turn-by-Turn Route Navigation & Logistics Modal */}
+        <RouteModal
+          mandi={activeRouteMandi}
+          origin={origin}
+          selectedCrop={selectedCrop}
+          isOpen={isRouteModalOpen}
+          onClose={() => setIsRouteModalOpen(false)}
+          onNavigateToRouteMesh={() => {
+            setIsRouteModalOpen(false);
+            setActiveTab("routemesh");
+          }}
+        />
 
       </main>
     </div>

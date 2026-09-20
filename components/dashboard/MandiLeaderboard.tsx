@@ -36,7 +36,7 @@ export default function MandiLeaderboard({
     const totalCount = all.length;
 
     return (
-        <div className="absolute top-4 left-4 z-30 w-80 sm:w-96 bg-white/95 backdrop-blur-md rounded-2xl border border-[#e6e2d8] shadow-xl overflow-hidden">
+        <div className="absolute top-3 sm:top-4 left-3 sm:left-4 z-30 w-[calc(100%-24px)] sm:w-96 max-w-sm bg-white/95 backdrop-blur-md rounded-2xl border border-[#e6e2d8] shadow-xl overflow-hidden transition-all duration-200">
 
             <button
                 onClick={() => setIsOpen((v) => !v)}
@@ -46,7 +46,7 @@ export default function MandiLeaderboard({
                     <span className="text-[11px] font-bold text-emerald-900 uppercase tracking-wider">
                         🎯 Mandi Comparison
                     </span>
-                    <span className="text-[10px] text-stone-400 font-normal">
+                    <span className="text-[10px] text-stone-500 font-medium px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200">
                         {feasibleCount}/{totalCount} feasible
                     </span>
                 </div>
@@ -59,11 +59,11 @@ export default function MandiLeaderboard({
 
             {isOpen && (
                 <>
-                    <div className="px-4 pb-2 flex items-center space-x-1 text-[10px] font-medium">
+                    <div className="px-4 pb-2 flex items-center space-x-1.5 text-[10px] font-medium">
                         <button
                             onClick={() => setFilter("feasible")}
-                            className={`px-2.5 py-1 rounded-full transition-all ${filter === "feasible"
-                                ? "bg-emerald-800 text-white"
+                            className={`px-3 py-1 rounded-full transition-all ${filter === "feasible"
+                                ? "bg-[#0b2b1d] text-amber-300 font-bold shadow-xs"
                                 : "bg-stone-100 text-stone-600 hover:bg-stone-200"
                                 }`}
                         >
@@ -71,8 +71,8 @@ export default function MandiLeaderboard({
                         </button>
                         <button
                             onClick={() => setFilter("all")}
-                            className={`px-2.5 py-1 rounded-full transition-all ${filter === "all"
-                                ? "bg-emerald-800 text-white"
+                            className={`px-3 py-1 rounded-full transition-all ${filter === "all"
+                                ? "bg-[#0b2b1d] text-amber-300 font-bold shadow-xs"
                                 : "bg-stone-100 text-stone-600 hover:bg-stone-200"
                                 }`}
                         >
@@ -80,7 +80,7 @@ export default function MandiLeaderboard({
                         </button>
                     </div>
 
-                    <div className="max-h-[420px] overflow-y-auto border-t border-stone-100">
+                    <div className="max-h-[300px] sm:max-h-[380px] overflow-y-auto border-t border-stone-100">
                         {visible.length === 0 && (
                             <div className="p-6 text-center text-xs text-stone-500">
                                 No feasible mandis within {recommendation.sellingWindowHours}h window.
@@ -99,7 +99,7 @@ export default function MandiLeaderboard({
                                 <button
                                     key={e.mandiId}
                                     onClick={() => onSelectMandiId?.(e.mandiId)}
-                                    className={`w-full text-left px-4 py-3 border-b border-stone-100 last:border-0 transition-colors hover:bg-emerald-50/40 ${isBest ? "bg-emerald-50/60" : ""
+                                    className={`w-full text-left px-4 py-2.5 sm:py-3 border-b border-stone-100 last:border-0 transition-colors hover:bg-emerald-50/40 ${isBest ? "bg-emerald-50/60" : ""
                                         } ${!e.feasible ? "opacity-60" : ""}`}
                                 >
                                     <div className="flex items-start justify-between gap-2">
@@ -116,7 +116,7 @@ export default function MandiLeaderboard({
                                                     {isBest ? "★" : rank}
                                                 </span>
                                                 <span
-                                                    className={`font-semibold text-xs truncate ${isBest ? "text-emerald-900" : "text-stone-900"
+                                                    className={`font-semibold text-xs truncate ${isBest ? "text-emerald-900 font-bold" : "text-stone-900"
                                                         }`}
                                                 >
                                                     {e.mandiName}

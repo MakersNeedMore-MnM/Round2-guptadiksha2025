@@ -16,14 +16,16 @@ interface MarketDetailDrawerProps {
   mandi: MandiMarket | null;
   selectedCrop: string;
   onClose: () => void;
+  onViewRoute?: (mandi: MandiMarket) => void;
   isRecommended?: boolean;
-  origin: Origin;   // ← NEW: the user's selected origin
+  origin: Origin;   // ← the user's selected origin
 }
 
 export default function MarketDetailDrawer({
   mandi,
   selectedCrop,
   onClose,
+  onViewRoute,
   isRecommended = false,
   origin,
 }: MarketDetailDrawerProps) {
@@ -44,7 +46,7 @@ export default function MarketDetailDrawer({
   const mandiDistrict = getMandiDistrict(mandi, lang);
   const cropLabel = getCropLabel(selectedCrop, lang);
 
-  // 🆕 Dynamic distance from user's selected origin
+  // Dynamic distance from user's selected origin
   const distKm = distanceFromOrigin(origin, mandi);
 
   // Localized origin name for the "from X" label
@@ -60,7 +62,7 @@ export default function MarketDetailDrawer({
         : t.drawerCongestionLow;
 
   return (
-    <div className="absolute top-4 right-4 z-30 w-80 sm:w-96 bg-white/95 backdrop-blur-md rounded-2xl border border-[#e6e2d8] shadow-2xl p-5 text-stone-900 animate-in fade-in slide-in-from-right-3 duration-200">
+    <div className="absolute top-auto bottom-0 sm:bottom-auto sm:top-4 right-0 sm:right-4 z-30 w-full sm:w-96 max-h-[85vh] sm:max-h-[90vh] overflow-y-auto bg-white/95 backdrop-blur-md rounded-t-3xl sm:rounded-2xl border border-[#e6e2d8] shadow-2xl p-4 sm:p-5 text-stone-900 animate-in fade-in slide-in-from-bottom-4 sm:slide-in-from-right-3 duration-200">
 
       {/* Header */}
       <div className="flex items-start justify-between pb-3 border-b border-stone-100">
@@ -70,10 +72,10 @@ export default function MarketDetailDrawer({
               {t.mockupOptimalChoice}
             </span>
           )}
-          <h3 className="font-serif text-lg font-normal text-stone-950">{mandiName}</h3>
+          <h3 className="font-serif text-lg sm:text-xl font-bold text-stone-950">{mandiName}</h3>
           <div className="text-xs text-stone-500 flex items-center space-x-1 mt-0.5">
-            <MapPin className="w-3 h-3 text-stone-400" />
-            <span>
+            <MapPin className="w-3 h-3 text-stone-400 shrink-0" />
+            <span className="truncate">
               {mandiDistrict} • {distKm} {t.drawerKm} ({originName})
             </span>
           </div>
@@ -81,14 +83,15 @@ export default function MarketDetailDrawer({
 
         <button
           onClick={onClose}
-          className="p-1 rounded-full text-stone-400 hover:text-stone-900 hover:bg-stone-100"
+          className="p-1.5 rounded-full text-stone-400 hover:text-stone-900 hover:bg-stone-100 transition-colors shrink-0"
+          title="Close details"
         >
           <X className="w-4 h-4" />
         </button>
       </div>
 
       {/* Selected Crop Pricing Box */}
-      <div className="py-4 space-y-3">
+      <div className="py-3 sm:py-4 space-y-3">
         <div className="flex items-center justify-between text-xs">
           <span className="font-semibold text-stone-600">
             {t.mockupCropSelection}: <strong>{cropLabel}</strong>
@@ -101,7 +104,7 @@ export default function MarketDetailDrawer({
             <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block">
               {t.mockupGrossMandiRate}
             </span>
-            <span className="font-serif text-2xl font-normal text-stone-900">
+            <span className="font-serif text-2xl font-bold text-stone-900">
               ₹{priceObj.headlinePrice.toFixed(2)}
             </span>
             <span className="text-xs text-stone-500 font-normal"> / kg</span>
@@ -111,7 +114,7 @@ export default function MarketDetailDrawer({
             <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">
               {t.mockupNetRealizationLabel}
             </span>
-            <span className="font-serif text-2xl font-normal text-emerald-900">
+            <span className="font-serif text-2xl font-bold text-emerald-900">
               ₹{priceObj.netEstimatedPrice.toFixed(2)}
             </span>
             <span className="text-xs text-emerald-800 font-medium"> {t.mockupNetPerKg}</span>
@@ -138,14 +141,18 @@ export default function MarketDetailDrawer({
         </div>
       </div>
 
-      {/* Footer Note */}
+      {/* Footer Note with Functional View Route Button */}
       <div className="pt-3 border-t border-stone-100 text-[11px] text-stone-500 flex items-center justify-between">
         <span className="flex items-center space-x-1">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-800" />
-          <span>{t.heroVerified}</span>
+          <ShieldCheck className="w-3.5 h-3.5 text-emerald-800 shrink-0" />
+          <span className="truncate">{t.heroVerified}</span>
         </span>
-        <button className="text-emerald-900 font-bold hover:underline">
-          {t.drawerViewRoute} →
+        <button
+          onClick={() => onViewRoute?.(mandi)}
+          className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-[#0b2b1d] hover:bg-[#143e2c] text-amber-300 font-bold shadow-xs transition-colors shrink-0"
+        >
+          <span>{t.drawerViewRoute}</span>
+          <span>→</span>
         </button>
       </div>
 

@@ -63,15 +63,15 @@ export default function ProfileView({ userProfile, onUpdateProfile }: ProfileVie
   ];
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 md:p-8 bg-[#fbf9f5] space-y-8">
+    <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 bg-[#fbf9f5] space-y-6 sm:space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#e6e2d8] pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#e6e2d8] pb-5 sm:pb-6">
         <div>
           <div className="flex items-center space-x-2 text-xs font-bold uppercase tracking-widest text-emerald-900 mb-1">
             <User className="w-4 h-4 text-emerald-800" />
             <span>Account & Farm Management</span>
           </div>
-          <h1 className="font-serif text-3xl font-normal text-stone-900 tracking-tight">
+          <h1 className="font-serif text-2xl sm:text-3xl font-normal text-stone-900 tracking-tight">
             Farmer Profile
           </h1>
           <p className="text-xs text-stone-500 mt-1">

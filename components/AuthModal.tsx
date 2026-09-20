@@ -239,7 +239,6 @@ export default function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModal
                   className="text-amber-800 hover:text-amber-900 font-medium flex items-center space-x-1 hover:underline"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>Fill Demo (ramesh_patil)</span>
                 </button>
 
                 <button

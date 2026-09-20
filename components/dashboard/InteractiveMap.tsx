@@ -10,8 +10,9 @@ import {
 } from "@/lib/mockMandiData";
 import { useLanguage } from "@/context/LanguageContext";
 import { distanceFromOrigin, PRESET_ORIGINS, type Origin } from "@/lib/geo";
+import { getCorridorPlan, calculateCorridorSplit } from "@/lib/routeMesh";
 import type { Language } from "@/lib/types";
-import { Navigation, X, Info } from "lucide-react";
+import { Navigation, X, Info, Users, Truck } from "lucide-react";
 
 interface InteractiveMapProps {
   mandis: MandiMarket[];
@@ -25,36 +26,37 @@ interface InteractiveMapProps {
   onOpenRouteDetails?: (mandi: MandiMarket) => void;
 }
 
-// Generate realistic intermediate highway curve points between origin and destination
-function generateHighwayRoutePoints(start: [number, number], end: [number, number]): [number, number][] {
-  const [lat1, lng1] = start;
-  const [lat2, lng2] = end;
+// Generate realistic intermediate highway curve points through waypoints
+function generateCorridorPolyline(points: [number, number][]): [number, number][] {
+  if (points.length <= 1) return points;
+  const result: [number, number][] = [];
 
-  // Mid point with realistic road curvature offset
-  const midLat = (lat1 + lat2) / 2;
-  const midLng = (lng1 + lng2) / 2;
-  const dLat = lat2 - lat1;
-  const dLng = lng2 - lng1;
+  for (let i = 0; i < points.length - 1; i++) {
+    const [lat1, lng1] = points[i];
+    const [lat2, lng2] = points[i + 1];
 
-  // Slight perpendicular bow to mimic highway curves
-  const curveFactor = 0.08;
-  const p1Lat = lat1 + dLat * 0.33 + (-dLng * curveFactor);
-  const p1Lng = lng1 + dLng * 0.33 + (dLat * curveFactor);
+    const midLat = (lat1 + lat2) / 2;
+    const midLng = (lng1 + lng2) / 2;
+    const dLat = lat2 - lat1;
+    const dLng = lng2 - lng1;
 
-  const p2Lat = lat1 + dLat * 0.66 + (dLng * curveFactor * 0.5);
-  const p2Lng = lng1 + dLng * 0.66 + (-dLat * curveFactor * 0.5);
+    // Slight curvature
+    const curveFactor = 0.04;
+    const p1Lat = lat1 + dLat * 0.33 + (-dLng * curveFactor);
+    const p1Lng = lng1 + dLng * 0.33 + (dLat * curveFactor);
 
-  return [
-    [lat1, lng1],
-    [p1Lat, p1Lng],
-    [midLat, midLng],
-    [p2Lat, p2Lng],
-    [endLatOrTarget(lat2), endLngOrTarget(lng2)],
-  ];
+    const p2Lat = lat1 + dLat * 0.66 + (dLng * curveFactor * 0.5);
+    const p2Lng = lng1 + dLng * 0.66 + (-dLat * curveFactor * 0.5);
+
+    if (i === 0) result.push([lat1, lng1]);
+    result.push([p1Lat, p1Lng]);
+    result.push([midLat, midLng]);
+    result.push([p2Lat, p2Lng]);
+    result.push([lat2, lng2]);
+  }
+
+  return result;
 }
-
-function endLatOrTarget(lat: number) { return lat; }
-function endLngOrTarget(lng: number) { return lng; }
 
 export default function InteractiveMap({
   mandis,
@@ -173,7 +175,7 @@ export default function InteractiveMap({
     origin,
   ]);
 
-  // ─── Render Highway Route Polyline & Origin Marker when activeRouteMandi is set ───
+  // ─── Render Highway Route Polyline & En-Route Farmer Waypoint Dots ───
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -185,8 +187,8 @@ export default function InteractiveMap({
     if (!activeRouteMandi) return;
 
     const safeOrigin = origin ?? PRESET_ORIGINS[0];
-    const originCoords: [number, number] = [safeOrigin.lat, safeOrigin.lng];
-    const destCoords: [number, number] = [activeRouteMandi.lat, activeRouteMandi.lng];
+    const plan = getCorridorPlan(safeOrigin, activeRouteMandi);
+    const splitData = calculateCorridorSplit(plan);
 
     const lang: Language = language ?? "en";
     const originName = lang === "hi" ? safeOrigin.nameHi : lang === "mr" ? safeOrigin.nameMr : safeOrigin.nameEn;
@@ -194,33 +196,21 @@ export default function InteractiveMap({
     const distKm = distanceFromOrigin(safeOrigin, activeRouteMandi);
     const driveHours = Math.max(0.5, parseFloat((distKm / 42 + 0.3).toFixed(1)));
 
-    // 1. Origin Pin Marker
-    const originIcon = L.divIcon({
-      className: "origin-marker-pin",
-      html: `
-        <div style="display:flex;flex-direction:column;align-items:center;">
-          <div style="background:#0b2b1d;color:#fde047;font-weight:bold;font-size:11px;padding:3px 8px;border-radius:12px;border:2px solid #fde047;box-shadow:0 3px 8px rgba(0,0,0,0.3);white-space:nowrap;display:flex;align-items:center;gap:4px;">
-            <span>📍</span>
-            <span>Origin: ${originName}</span>
-          </div>
-          <div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid #0b2b1d;margin-top:-1px;"></div>
-        </div>
-      `,
-      iconSize: [130, 36],
-      iconAnchor: [65, 36],
-    });
+    // Extract all waypoint coordinates in sequence: [Origin, Farmer Waypoint 1, Farmer Waypoint 2, ..., Destination]
+    const keyCoords: [number, number][] = [
+      [safeOrigin.lat, safeOrigin.lng],
+      ...plan.farmers.filter((f) => !f.isCurrentUser).map((f) => [f.lat, f.lng] as [number, number]),
+      [activeRouteMandi.lat, activeRouteMandi.lng],
+    ];
 
-    const originMarker = L.marker(originCoords, { icon: originIcon, zIndexOffset: 1000 }).addTo(map);
-    routeLayersRef.current.push(originMarker);
-
-    // 2. Generate Route Waypoints
-    const routePoints = generateHighwayRoutePoints(originCoords, destCoords);
+    // 1. Generate curved road polyline across all waypoints
+    const routePoints = generateCorridorPolyline(keyCoords);
 
     // Outer Glow / Road Outline
     const routeOutline = L.polyline(routePoints, {
       color: "#0b2b1d",
-      weight: 7,
-      opacity: 0.85,
+      weight: 8,
+      opacity: 0.9,
       lineCap: "round",
       lineJoin: "round",
     }).addTo(map);
@@ -229,37 +219,109 @@ export default function InteractiveMap({
     // Inner Glowing Emerald / Amber Dashed Highway Line
     const routeInner = L.polyline(routePoints, {
       color: "#34d399",
-      weight: 3.5,
+      weight: 4,
       opacity: 1,
       dashArray: "8, 12",
       lineCap: "round",
     }).addTo(map);
     routeLayersRef.current.push(routeInner);
 
-    // 3. Mid-Point Interactive Badge
+    // 2. Origin Pin Marker (Farmer A / You)
+    const originFarmer = plan.farmers.find((f) => f.isCurrentUser) || plan.farmers[0];
+    const originIcon = L.divIcon({
+      className: "origin-marker-pin",
+      html: `
+        <div style="display:flex;flex-direction:column;align-items:center;cursor:pointer;">
+          <div style="background:#0b2b1d;color:#fde047;font-weight:bold;font-size:11px;padding:4px 9px;border-radius:14px;border:2px solid #fde047;box-shadow:0 4px 10px rgba(0,0,0,0.35);white-space:nowrap;display:flex;align-items:center;gap:4px;">
+            <span>📍</span>
+            <span>Origin: ${originName} (${(originFarmer.quantityKg / 1000).toFixed(1)}T ${originFarmer.crop})</span>
+          </div>
+          <div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid #0b2b1d;margin-top:-1px;"></div>
+        </div>
+      `,
+      iconSize: [160, 38],
+      iconAnchor: [80, 38],
+    });
+
+    const originMarker = L.marker([safeOrigin.lat, safeOrigin.lng], {
+      icon: originIcon,
+      zIndexOffset: 1000,
+    }).addTo(map);
+    originMarker.bindTooltip(
+      `<strong>Farm Origin:</strong> ${originName}<br/>Farmer: ${originFarmer.name}<br/>Cargo: ${originFarmer.quantityKg.toLocaleString()} kg ${originFarmer.crop}`,
+      { direction: "top", offset: [0, -26] }
+    );
+    originMarker.on("click", () => onOpenRouteDetails?.(activeRouteMandi));
+    routeLayersRef.current.push(originMarker);
+
+    // 3. En-Route Farmer Waypoint Dots (Co-loaders along the corridor)
+    plan.farmers.forEach((farmer, idx) => {
+      if (farmer.isCurrentUser) return; // already rendered as origin
+
+      const splitInfo = splitData.splits.find((s) => s.farmerId === farmer.id);
+
+      const farmerDotIcon = L.divIcon({
+        className: "enroute-farmer-dot",
+        html: `
+          <div style="display:flex;flex-direction:column;align-items:center;cursor:pointer;animation:pulse 2s infinite;">
+            <div style="display:flex;align-items:center;gap:5px;background:#ffffff;color:#0b2b1d;font-weight:bold;font-size:10px;padding:3px 8px;border-radius:20px;border:2px solid #f59e0b;box-shadow:0 4px 10px rgba(0,0,0,0.25);white-space:nowrap;">
+              <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#10b981;box-shadow:0 0 6px #10b981;"></span>
+              <span>${farmer.cropEmoji} ${farmer.name.split(" ")[0]}</span>
+              <span style="color:#059669;font-weight:800;">+${(farmer.quantityKg / 1000).toFixed(1)}T</span>
+            </div>
+            <div style="width:14px;height:14px;border-radius:50%;background:#f59e0b;border:2px solid #ffffff;box-shadow:0 2px 6px rgba(0,0,0,0.3);margin-top:2px;"></div>
+          </div>
+        `,
+        iconSize: [130, 42],
+        iconAnchor: [65, 34],
+      });
+
+      const farmerMarker = L.marker([farmer.lat, farmer.lng], {
+        icon: farmerDotIcon,
+        zIndexOffset: 950,
+      }).addTo(map);
+
+      farmerMarker.bindTooltip(
+        `<div style="font-size:11px;line-height:1.4;">
+          <strong style="color:#0b2b1d;">👨‍🌾 En-Route Co-Loader #${idx}:</strong> ${farmer.name}<br/>
+          <strong>📍 Pickup:</strong> ${farmer.pickupLocation}<br/>
+          <strong>📦 Cargo:</strong> ${farmer.quantityKg.toLocaleString()} kg ${farmer.crop}<br/>
+          <strong>💰 Split Rate:</strong> ₹${splitInfo?.ratePerQtl ?? 95}/Qtl (Saved ${splitInfo?.savingsPct ?? 38}%)<br/>
+          <em style="color:#059669;font-weight:600;">✓ Verified APMC Co-loader Pass</em>
+        </div>`,
+        { direction: "top", offset: [0, -24] }
+      );
+
+      farmerMarker.on("click", () => onOpenRouteDetails?.(activeRouteMandi));
+      routeLayersRef.current.push(farmerMarker);
+    });
+
+    // 4. Mid-Point Highway Pooling Badge
     const midPoint = routePoints[Math.floor(routePoints.length / 2)];
+    const coLoaderCount = plan.farmers.length;
     const midIcon = L.divIcon({
       className: "route-mid-badge",
       html: `
-        <div style="background:rgba(11,43,29,0.92);backdrop-filter:blur(4px);color:#ffffff;font-size:10px;font-weight:bold;padding:4px 9px;border-radius:20px;border:1.5px solid #34d399;box-shadow:0 4px 10px rgba(0,0,0,0.25);white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:4px;">
+        <div style="background:rgba(11,43,29,0.95);backdrop-filter:blur(6px);color:#ffffff;font-size:10px;font-weight:bold;padding:4px 10px;border-radius:20px;border:1.5px solid #34d399;box-shadow:0 4px 12px rgba(0,0,0,0.3);white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:5px;">
           <span>🛣️</span>
           <span>${distKm} km • ~${driveHours}h</span>
+          <span style="background:#f59e0b;color:#000;font-size:9px;font-weight:800;padding:1px 5px;border-radius:10px;">${coLoaderCount} Farmers Co-loading</span>
         </div>
       `,
-      iconSize: [110, 26],
-      iconAnchor: [55, 13],
+      iconSize: [180, 26],
+      iconAnchor: [90, 13],
     });
 
-    const midMarker = L.marker(midPoint, { icon: midIcon, zIndexOffset: 950 }).addTo(map);
+    const midMarker = L.marker(midPoint, { icon: midIcon, zIndexOffset: 900 }).addTo(map);
     midMarker.on("click", () => {
       onOpenRouteDetails?.(activeRouteMandi);
     });
     routeLayersRef.current.push(midMarker);
 
-    // 4. Auto-fit camera bounds to comfortably view the whole route
-    const bounds = L.latLngBounds([originCoords, destCoords]);
-    map.fitBounds(bounds, {
-      padding: [70, 70],
+    // 5. Auto-fit camera bounds to comfortably view all farmers and waypoints
+    const allBounds = L.latLngBounds(keyCoords);
+    map.fitBounds(allBounds, {
+      padding: [80, 80],
       maxZoom: 11,
       animate: true,
       duration: 1,
@@ -270,23 +332,27 @@ export default function InteractiveMap({
   return (
     <div className="relative w-full h-full min-h-[420px] sm:min-h-[500px] rounded-2xl overflow-hidden shadow-md border border-[#e6e2d8]">
       
-      {/* Route Active Top Overlay Notification Banner */}
+      {/* Route Active Top Overlay Notification Banner with Co-loader Summary */}
       {activeRouteMandi && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 w-auto max-w-[92%] sm:max-w-md bg-[#0b2b1d]/95 backdrop-blur-md text-white px-4 py-2.5 rounded-full border border-amber-400 shadow-xl flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2">
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 w-auto max-w-[94%] sm:max-w-xl bg-[#0b2b1d]/95 backdrop-blur-md text-white px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-full border border-amber-400 shadow-xl flex items-center justify-between gap-2.5 sm:gap-4 animate-in fade-in slide-in-from-top-2">
           <div className="flex items-center space-x-2 text-xs truncate">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
             <span className="truncate">
-              <strong>Route Active:</strong> {origin?.nameEn ?? "Pune"} ➔ {activeRouteMandi.name} ({distanceFromOrigin(origin, activeRouteMandi)} km)
+              <strong>RouteMesh Corridor:</strong> {origin?.nameEn ?? "Pune"} ➔ {activeRouteMandi.name}
+            </span>
+            <span className="hidden sm:inline-flex items-center space-x-1 px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 text-[10px] font-bold border border-amber-400/40">
+              <Users className="w-3 h-3" />
+              <span>En-Route Co-loaders Active</span>
             </span>
           </div>
 
           <div className="flex items-center space-x-1.5 shrink-0">
             <button
               onClick={() => onOpenRouteDetails?.(activeRouteMandi)}
-              className="px-2.5 py-1 bg-amber-400 hover:bg-amber-300 text-stone-950 text-[10px] font-bold uppercase tracking-wider rounded-full transition-colors flex items-center space-x-1"
+              className="px-2.5 sm:px-3 py-1 bg-amber-400 hover:bg-amber-300 text-stone-950 text-[10px] font-bold uppercase tracking-wider rounded-full transition-colors flex items-center space-x-1 shadow-xs"
             >
               <Info className="w-3 h-3" />
-              <span>Details</span>
+              <span>Split Details</span>
             </button>
             <button
               onClick={onClearRoute}

@@ -100,16 +100,16 @@ export default function SettingsView({ onLogout }: SettingsViewProps) {
 
           <div className="space-y-4 text-xs">
             <label className="flex items-center justify-between cursor-pointer p-3 rounded-xl hover:bg-stone-50 transition-colors">
-              <div>
+              {/* <div>
                 <span className="font-semibold text-stone-800 block text-sm">Mandi Price Spike Alerts</span>
                 <span className="text-stone-500">Get notified when prices rise by more than 10% in your target mandis</span>
-              </div>
-              <input
+              </div> */}
+              {/* <input
                 type="checkbox"
                 checked={priceAlerts}
                 onChange={(e) => setPriceAlerts(e.target.checked)}
                 className="w-4 h-4 accent-emerald-800"
-              />
+              /> */}
             </label>
 
             <label className="flex items-center justify-between cursor-pointer p-3 rounded-xl hover:bg-stone-50 transition-colors">

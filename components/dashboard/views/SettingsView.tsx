@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { Settings, Bell, Globe, Database, LogOut, Check, RefreshCw } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Settings, Globe, Trash2, LogOut, Check, Server, ShieldCheck, Activity, User } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 
 interface SettingsViewProps {
@@ -11,20 +11,33 @@ interface SettingsViewProps {
 export default function SettingsView({ onLogout }: SettingsViewProps) {
   const { language, setLanguage } = useLanguage();
 
-  const [priceAlerts, setPriceAlerts] = useState(true);
-  const [morningSummary, setMorningSummary] = useState(true);
-  const [routemeshAlerts, setRoutemeshAlerts] = useState(true);
-  const [offlineSync, setOfflineSync] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [refreshSuccess, setRefreshSuccess] = useState(false);
+  const [userName, setUserName] = useState<string>("Farmer");
+  const [userLocation, setUserLocation] = useState<string>("Maharashtra");
+  const [clearedData, setClearedData] = useState(false);
 
-  const handleRefreshCache = () => {
-    setIsRefreshing(true);
-    setTimeout(() => {
-      setIsRefreshing(false);
-      setRefreshSuccess(true);
-      setTimeout(() => setRefreshSuccess(false), 3000);
-    }, 1000);
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("farmoptima_user");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.name) setUserName(parsed.name);
+        if (parsed.location) setUserLocation(parsed.location);
+      }
+    } catch {
+      // Fallback defaults
+    }
+  }, []);
+
+  const handleClearCache = () => {
+    try {
+      // Clear non-essential cached form inputs while keeping auth
+      localStorage.removeItem("farmoptima_last_query");
+      localStorage.removeItem("farmoptima_cached_routes");
+      setClearedData(true);
+      setTimeout(() => setClearedData(false), 3000);
+    } catch {
+      // Handle error gracefully
+    }
   };
 
   return (
@@ -36,10 +49,10 @@ export default function SettingsView({ onLogout }: SettingsViewProps) {
           <span>App Preferences & Configuration</span>
         </div>
         <h1 className="font-serif text-2xl sm:text-3xl font-normal text-stone-900 tracking-tight">
-          Settings & Notifications
+          Settings & Preferences
         </h1>
         <p className="text-xs text-stone-500 mt-1">
-          Configure notifications, offline data synchronization, and language settings.
+          Manage system language, local application data, and connected services.
         </p>
       </div>
 
@@ -88,101 +101,84 @@ export default function SettingsView({ onLogout }: SettingsViewProps) {
           </div>
         </div>
 
-        {/* Notification Alerts */}
+        {/* Active Connected Services & Data Feeds */}
         <div className="bg-white rounded-2xl border border-[#e6e2d8] p-6 shadow-xs space-y-4">
           <div className="flex items-center space-x-3 pb-3 border-b border-stone-100">
-            <Bell className="w-5 h-5 text-emerald-800" />
+            <Server className="w-5 h-5 text-emerald-800" />
             <div>
-              <h2 className="font-serif text-base font-bold text-stone-900">Notification Alerts</h2>
-              <p className="text-xs text-stone-500">Mandi rate surge alerts and RouteMesh co-loader notifications</p>
+              <h2 className="font-serif text-base font-bold text-stone-900">Live Service Integrations</h2>
+              <p className="text-xs text-stone-500">Connected real-time APIs powering price discovery & dispatch</p>
             </div>
           </div>
 
-          <div className="space-y-4 text-xs">
-            <label className="flex items-center justify-between cursor-pointer p-3 rounded-xl hover:bg-stone-50 transition-colors">
-              {/* <div>
-                <span className="font-semibold text-stone-800 block text-sm">Mandi Price Spike Alerts</span>
-                <span className="text-stone-500">Get notified when prices rise by more than 10% in your target mandis</span>
-              </div> */}
-              {/* <input
-                type="checkbox"
-                checked={priceAlerts}
-                onChange={(e) => setPriceAlerts(e.target.checked)}
-                className="w-4 h-4 accent-emerald-800"
-              /> */}
-            </label>
-
-            <label className="flex items-center justify-between cursor-pointer p-3 rounded-xl hover:bg-stone-50 transition-colors">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div className="p-3.5 rounded-xl bg-stone-50 border border-stone-200/80 flex items-start space-x-3">
+              <Activity className="w-4 h-4 text-emerald-700 mt-0.5 shrink-0" />
               <div>
-                <span className="font-semibold text-stone-800 block text-sm">Daily 7:00 AM Morning Market Brief</span>
-                <span className="text-stone-500">Daily summary of wholesale arrivals and top price realization</span>
+                <span className="font-semibold text-stone-800 block">AGMARKNET / data.gov.in</span>
+                <span className="text-stone-500 text-[11px]">Direct live wholesale price feed across APMC mandis</span>
               </div>
-              <input
-                type="checkbox"
-                checked={morningSummary}
-                onChange={(e) => setMorningSummary(e.target.checked)}
-                className="w-4 h-4 accent-emerald-800"
-              />
-            </label>
+            </div>
 
-            <label className="flex items-center justify-between cursor-pointer p-3 rounded-xl hover:bg-stone-50 transition-colors">
+            <div className="p-3.5 rounded-xl bg-stone-50 border border-stone-200/80 flex items-start space-x-3">
+              <Activity className="w-4 h-4 text-emerald-700 mt-0.5 shrink-0" />
               <div>
-                <span className="font-semibold text-stone-800 block text-sm">RouteMesh Co-Loader Match</span>
-                <span className="text-stone-500">Alerts when another farmer on your corridor has compatible freight</span>
+                <span className="font-semibold text-stone-800 block">RouteMesh Routing Engine</span>
+                <span className="text-stone-500 text-[11px]">Real-time corridor distance, toll & freight cost calculator</span>
               </div>
-              <input
-                type="checkbox"
-                checked={routemeshAlerts}
-                onChange={(e) => setRoutemeshAlerts(e.target.checked)}
-                className="w-4 h-4 accent-emerald-800"
-              />
-            </label>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-stone-50 border border-stone-200/80 flex items-start space-x-3">
+              <Activity className="w-4 h-4 text-emerald-700 mt-0.5 shrink-0" />
+              <div>
+                <span className="font-semibold text-stone-800 block">AI Agronomist Engine</span>
+                <span className="text-stone-500 text-[11px]">Multilingual intelligence via Groq & Gemini Multimodal</span>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-stone-50 border border-stone-200/80 flex items-start space-x-3">
+              <ShieldCheck className="w-4 h-4 text-emerald-700 mt-0.5 shrink-0" />
+              <div>
+                <span className="font-semibold text-stone-800 block">Client-Side Data Privacy</span>
+                <span className="text-stone-500 text-[11px]">Harvest data stored securely within your browser</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Offline Cache & Data Feeds */}
+        {/* Local Storage & Session Data Management */}
         <div className="bg-white rounded-2xl border border-[#e6e2d8] p-6 shadow-xs space-y-4">
           <div className="flex items-center space-x-3 pb-3 border-b border-stone-100">
-            <Database className="w-5 h-5 text-emerald-800" />
+            <User className="w-5 h-5 text-emerald-800" />
             <div>
-              <h2 className="font-serif text-base font-bold text-stone-900">Offline Mandi Data Cache</h2>
-              <p className="text-xs text-stone-500">Store mandi price feeds locally for offline field connectivity</p>
+              <h2 className="font-serif text-base font-bold text-stone-900">Active Profile & Storage</h2>
+              <p className="text-xs text-stone-500">Current session profile and browser storage controls</p>
             </div>
           </div>
-
-          <label className="flex items-center justify-between cursor-pointer p-3 rounded-xl hover:bg-stone-50 transition-colors text-xs">
-            <div>
-              <span className="font-semibold text-stone-800 block text-sm">Enable Offline Background Sync</span>
-              <span className="text-stone-500">Keep latest verified rates available even when cell connectivity drops</span>
-            </div>
-            <input
-              type="checkbox"
-              checked={offlineSync}
-              onChange={(e) => setOfflineSync(e.target.checked)}
-              className="w-4 h-4 accent-emerald-800"
-            />
-          </label>
 
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-stone-50 border border-stone-200">
             <div>
-              <span className="text-xs font-bold text-stone-800 block">Status: 45 Maharashtra Mandis Cached</span>
-              <span className="text-[11px] text-stone-500">Last synchronized from AGMARKNET / data.gov.in: Today at 08:30 AM</span>
+              <span className="text-xs font-bold text-stone-800 block">
+                {userName} &bull; {userLocation}
+              </span>
+              <span className="text-[11px] text-stone-500">
+                Language Preference: {language === "en" ? "English" : language === "hi" ? "हिंदी" : "मराठी"}
+              </span>
             </div>
 
             <button
-              onClick={handleRefreshCache}
-              disabled={isRefreshing}
-              className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-white hover:bg-stone-100 border border-stone-300 text-stone-800 text-xs font-semibold shadow-2xs transition-all disabled:opacity-50"
+              onClick={handleClearCache}
+              className="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-white hover:bg-stone-100 border border-stone-300 text-stone-800 text-xs font-semibold shadow-2xs transition-all"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
-              <span>{isRefreshing ? "Updating Feeds..." : "Refresh Feeds"}</span>
+              <Trash2 className="w-3.5 h-3.5 text-stone-600" />
+              <span>Clear Search Cache</span>
             </button>
           </div>
 
-          {refreshSuccess && (
+          {clearedData && (
             <div className="p-3 rounded-xl bg-emerald-50 text-emerald-900 text-xs font-medium border border-emerald-300 flex items-center space-x-1.5">
               <Check className="w-4 h-4" />
-              <span>Offline Mandi cache updated successfully with latest data.gov.in rates!</span>
+              <span>Cached temporary search records cleared successfully!</span>
             </div>
           )}
         </div>
